@@ -3,7 +3,7 @@
 # Date: 2018-03-07 12:08:34
 # to do: 
 rm(list=ls())
-##############ACHTUNG: bei plotten hochgestellte zwei in Spaltenübershrift von Dataframe...unschön!
+##############
 ########################################################################################
 ###Presettings
 ########################################################################################
@@ -12,7 +12,7 @@ library(ggplot2)
 library(dplyr)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "mai18_50m_resid_nrmlz_newDB_rad/2018-05-30_ffs_pls_ffs_indxINOUT/"
+sub <- "mar18_50m_resid_nrmlz/2018-03-09_rfe_pls_unabh_repeat/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -22,7 +22,7 @@ if (file.exists(outpath)==F){
 ###actual plotting
 ########################################################################################
 
-df_resp_all <- get(load(paste0(inpath, "df_resp_all_for_plotting.RData")))
+load(paste0(inpath, "df_resp_al_for_plotting.RData"))
 colnames(df_resp_all)[which(colnames(df_resp_all) == "Rsquared")] <- "R2"
 
 ###rename levels for naming of xlab-ticks ############ACHTUNG R² in spaltenüberschrift o_O############Lösung finden: gibt es eine andere Lösung für ggpot2??

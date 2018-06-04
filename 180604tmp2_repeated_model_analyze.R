@@ -12,10 +12,9 @@ library(RColorBrewer)
 library(rasterVis)
 library(grid)
 library(caret)
-library(gtools)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "mai18_50m_resid_nrmlz_newDB_rad/2018-05-30_ffs_pls_ffs_indxINOUT/"
+sub <- "mar18_50m_resid_nrmlz/2018-03-09_rfe_pls_unabh_repeat/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -40,15 +39,15 @@ models <- list.files(path = inpath, pattern = glob2rx("indv_model*"), full.names
 mod_all <- list()
 run_all <- c()
 for (i in seq(length(models))){
-  mod <- get(load(file = models[i]))
+  load(file = models[i])
   nm <- strsplit(x = models[i], split = "_|\\.")
-  resp <- nm[[1]][length(nm[[1]])-1]#####################################################sollte auf dauer anders (relativ) angegeben werden!
-  run <- nm[[1]][length(nm[[1]])-4]
+  resp <- nm[[1]][15]#####################################################sollte auf dauer anders (relativ) angegeben werden!
+  run <- nm[[1]][12]
   mod_all[[paste0(resp, "_", run)]] <- mod
   run_all <- c(run_all, run)
 }
 run_all <- unique(run_all)
-run_all_srt <- mixedsort(run_all)
+run_all_srt <- c(run_all[1], run_all[c(3:length(run_all))], run_all[2])
 save(mod_all, file = paste0(inpath, "/pls_model_list_all.RData"))
 
 
@@ -61,7 +60,7 @@ names(mod_lst) <- nm_resp
 save(mod_lst, file = paste0(inpath, "/pls_model_list_all_lst.RData"))
 
 ### check testing plots for each run
-outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
+load(paste0(inpath, "/outs_lst.RData"))
 for (i in seq(length(outs_lst))){
   names(outs_lst)[[i]] <- run_all_srt[[i]]
 }
@@ -100,4 +99,4 @@ for (i in names(mod_lst)){
   }
 }
 
-save(df_resp_all, file = paste0(inpath, "df_resp_all_for_plotting.RData"))
+#save(df_resp_all, file = paste0(inpath, "df_resp_al_for_plotting.RData"))
