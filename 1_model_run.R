@@ -131,7 +131,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
 
-cl <- 25
+cl <- 21
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -147,9 +147,10 @@ registerDoParallel(cl)
 #                      "SRsnails", "SRanimals", "SRrosids", "SRasterids", "SRmonocots", "SReudicots", "SRlycopodiopsida",
 #                      "SRconifers", "SRferns", "SRmagnoliids", "SRallplants"), .packages=c("caret", "CAST", "plyr"))%dopar%{
 
-model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%dopar%{
+# model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
+model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################
@@ -236,10 +237,17 @@ model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%do
           trControl = trainControl(index = cvIndex, 
                                    allowParallel = F)) ##########PLATZHALTER###########))
     }
-    # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), 
+    # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
     # trControl = trainControl(index = cvIndex, allowParallel = F))
-    nm_lst <- strsplit(x = i, split = "_")
-    nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
+    nm <- gsub("_", "", i)
+    # nm_lst <- strsplit(x = i, split = "_")
+    # if (grepl("NMDS", nm_lst[[1]][3])){
+    #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2], nm_lst[[1]][3])
+    # } else{
+    #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
+    # }
+    # save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
+    #                         nm, ".RData"))
     save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
                             nm, ".RData"))
     print(paste0("DONE: ", modDir, "model", type, "_", method, "_", 
