@@ -131,7 +131,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
 
-cl <- 21
+cl <- 18
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
