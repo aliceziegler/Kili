@@ -26,23 +26,23 @@ df_resp_all <- get(load(paste0(inpath, "df_resp_all_for_plotting.RData")))
 colnames(df_resp_all)[which(colnames(df_resp_all) == "Rsquared")] <- "R2"
 
 ###rename levels for naming of xlab-ticks ############ACHTUNG R² in spaltenüberschrift o_O############Lösung finden: gibt es eine andere Lösung für ggpot2??
-levels(df_resp_all$resp) <- c( "all plants (resid)", "all animals (resid)", "ants (resid)", 
-                               "asterids (resid)", "bats (resid)", "bees (resid)", 
-                               "birds (resid)", "collembola (resid)", "conifers (resid)", 
-                               "dungbeetles (resid)", "eudicots (resid)", "ferns (resid)", 
-                               "lycopodiopsida (resid)", "magnoliids (resid)", 
-                               "mammals (resid)", "millipedes (resid)", "monocots (resid)", 
-                               "moths (resid)", "orthoptera (resid)", 
-                               "other aculeata (resid)", "other coleoptera (resid)", 
-                               "parasitoids (resid)", "rosids (resid)", "snails (resid)", 
-                               "spiders (resid)", "syrphids (resid)", "all plants", 
-                               "all animals", "ants", "asterids", "bats", "bees", 
-                               "birds", "collembola", "conifers", "dungbeetles", 
-                               "eudicots", "ferns", "lycopodiopsida", 
-                               "magnoliids", "mammals", "millipedes", "monocots", 
-                               "moths", "orthoptera", "other aculeata", 
-                               "other coleoptera", "parasitoids", "rosids", 
-                               "snails", "spiders", "syrphids")
+# levels(df_resp_all$resp) <- c( "all plants (resid)", "all animals (resid)", "ants (resid)", 
+#                                "asterids (resid)", "bats (resid)", "bees (resid)", 
+#                                "birds (resid)", "collembola (resid)", "conifers (resid)", 
+#                                "dungbeetles (resid)", "eudicots (resid)", "ferns (resid)", 
+#                                "lycopodiopsida (resid)", "magnoliids (resid)", 
+#                                "mammals (resid)", "millipedes (resid)", "monocots (resid)", 
+#                                "moths (resid)", "orthoptera (resid)", 
+#                                "other aculeata (resid)", "other coleoptera (resid)", 
+#                                "parasitoids (resid)", "rosids (resid)", "snails (resid)", 
+#                                "spiders (resid)", "syrphids (resid)", "all plants", 
+#                                "all animals", "ants", "asterids", "bats", "bees", 
+#                                "birds", "collembola", "conifers", "dungbeetles", 
+#                                "eudicots", "ferns", "lycopodiopsida", 
+#                                "magnoliids", "mammals", "millipedes", "monocots", 
+#                                "moths", "orthoptera", "other aculeata", 
+#                                "other coleoptera", "parasitoids", "rosids", 
+#                                "snails", "spiders", "syrphids")
 
 
 ##only resid: 

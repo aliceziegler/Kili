@@ -49,7 +49,7 @@ for (i in seq(length(models))){
 }
 run_all <- unique(run_all)
 run_all_srt <- mixedsort(run_all)
-save(mod_all, file = paste0(inpath, "/pls_model_list_all.RData"))
+#save(mod_all, file = paste0(inpath, "/pls_model_list_all.RData"))
 
 
 mod_lst <- lapply(nm_resp, function(x){
@@ -94,6 +94,7 @@ names(prediction_rep) <- names(mod_lst)
 df_resp_all <- data.frame(matrix(nrow=0, ncol=4))
 for (i in names(mod_lst)){
   if (!is.null(prediction_rep[[i]])){
+    print(i)
     df_resp <- as.data.frame(prediction_rep[[i]])
     df_resp$resp <- i
     df_resp_all <- rbind(df_resp_all, df_resp)

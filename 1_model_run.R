@@ -236,8 +236,8 @@ model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%do
           trControl = trainControl(index = cvIndex, 
                                    allowParallel = F)) ##########PLATZHALTER###########))
     }
-    # mod <- rfe(pred, resp, method = method,
-    #            rfeControl = rfe_cntrl, tuneLength = tuneLength)
+    # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), 
+    # trControl = trainControl(index = cvIndex, allowParallel = F))
     nm_lst <- strsplit(x = i, split = "_")
     nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
     save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
