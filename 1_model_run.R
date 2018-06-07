@@ -69,7 +69,7 @@ rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 #comment for explenatory filename
 comm <- "_ffs_indxINOUT"
 ind_nums <- sort(unique(tbl$selID))
-frst <- T # set true if model should onlybe done for forested plots
+frst <- F # set true if model should onlybe done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
 if (file.exists(modDir)==F){
@@ -132,7 +132,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
 
-cl <- 11
+cl <- 20
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -148,11 +148,12 @@ registerDoParallel(cl)
 #                      "SRsnails", "SRanimals", "SRrosids", "SRasterids", "SRmonocots", "SReudicots", "SRlycopodiopsida",
 #                      "SRconifers", "SRferns", "SRmagnoliids", "SRallplants"), .packages=c("caret", "CAST", "plyr"))%dopar%{
 
-# model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+# model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
-model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-#model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+# model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+# model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################
