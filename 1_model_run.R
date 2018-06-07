@@ -177,7 +177,7 @@ model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), 
   
   
   
-  for (j in seq(ind_num)){
+  for (j in seq(ind_nums)){
     # #if some plot in outs_lst is now filtered, fill void with other plot of 
     # #that landuse by chance (problem with toolittle plot subset (eg. only forest))
     # for(k in seq(nrow(outs_lst[[j]]))){
