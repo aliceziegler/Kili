@@ -68,7 +68,7 @@ rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
 comm <- "_ffs_indxINOUT"
-ind_num <- max(tbl$selID)
+ind_nums <- sort(unique(tbl$selID))
 frst <- T # set true if model should onlybe done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
@@ -163,7 +163,7 @@ model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), 
   save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
   
   ###check outs list
-  outs_lst <- lapply(seq(ind_num), function(k){
+  outs_lst <- lapply(ind_nums, function(k){
     out_sel <- df_scl[which(df_scl$selID == k),]
     miss <- cats[!(cats %in% out_sel$cat)]
     df_miss <- df_scl[df_scl$cat %in% as.vector(miss),]
