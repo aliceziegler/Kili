@@ -202,7 +202,7 @@ model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), 
     ################
     ################
     # df_test$selID
-    cvind_num <- unique(df_train$selID)
+    cvind_num <- unique(sort(df_train$selID))
     cvouts_lst <- lapply(cvind_num, function(k){
       out_sel <- df_train[which(df_train$selID == k),]
       miss <- cats[!(cats %in% out_sel$cat)]
