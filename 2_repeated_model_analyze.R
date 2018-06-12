@@ -78,12 +78,12 @@ prediction_rep <- lapply(names(mod_lst), function(y){
       print(z)
       outs <- outs_lst[[grep(paste0(z, "$"), names(outs_lst))]]$plotID
       new_df <- df_scl[which(df_scl$plotID %in% outs),]
-      colnames(new_df)[4] <- y#########################################sollte auf dauer geändert werden
+      colnames(new_df)[5] <- y#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
       prediction <- predict(mod_lst[[y]][[paste0(y, "_run", z)]], newdata = new_df)
       stats <- postResample(prediction, new_df[[y]])
       return(stats)
     })
-    aprediction_run_mat <- do.call(rbind, prediction_run)
+    prediction_run_mat <- do.call(rbind, prediction_run)
   }
 })
 names(prediction_rep) <- names(mod_lst)
