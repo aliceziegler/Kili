@@ -17,7 +17,7 @@ library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 #setwd("/media/memory02/users/aziegler/src")
-sub <- "mai18_50m_resid_nrmlz_newDB_rad/"
+sub <- "jun18_50m/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
 
@@ -47,6 +47,7 @@ tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in
 # tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelöst werden 
 ###
 tbl <- tbl_rw[,tbl_cols]
+#saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
@@ -67,7 +68,7 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_ffs_indxINOUT_onlyfrst"
+comm <- "_cv_onlyForest"
 ind_nums <- sort(unique(tbl$selID))
 frst <- T # set true if model should onlybe done for forested plots
 

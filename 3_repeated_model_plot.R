@@ -1,7 +1,7 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-03-07 12:08:34
-# to do: 
+# to do: !!rmse normalisieren auf SD oder mean
 rm(list=ls())
 ##############ACHTUNG: bei plotten hochgestellte zwei in Spaltenübershrift von Dataframe...unschön!
 ########################################################################################
