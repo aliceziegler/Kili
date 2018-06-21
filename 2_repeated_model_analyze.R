@@ -1,7 +1,7 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-03-07 12:08:34
-# to do: 
+# to do: ###optimieren: mod_all muss vermieden werden. jeder loop muss über die einzelmodelle laufen! 
 rm(list=ls())
 ########################################################################################
 ###Presettings
@@ -15,7 +15,7 @@ library(caret)
 library(gtools)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "mai18_50m_resid_nrmlz_newDB_rad/2018-05-30_ffs_pls_ffs_indxINOUT/"
+sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
