@@ -1,7 +1,8 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-03-07 12:08:34
-# to do: ###optimieren: mod_all muss vermieden werden. jeder loop muss über die einzelmodelle laufen! 
+# to do: ###optimieren: mod_all muss vermieden werden. jeder loop muss über die einzelmodelle laufen!
+#########werden hier wirklich nur die resp verwendet, die im ffs rauskommen???
 rm(list=ls())
 ########################################################################################
 ###Presettings
@@ -13,6 +14,10 @@ library(rasterVis)
 library(grid)
 library(caret)
 library(gtools)
+library(gsubfn)
+library(plyr)
+library(dplyr)
+library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
@@ -26,79 +31,103 @@ if (file.exists(outpath)==F){
 ########################################################################################
 load(file = paste0(inpath, "nm_pred.RData"))
 load(file = paste0(inpath, "nm_resp.RData"))
-nm_resp <- gsub("resid_", "resid", nm_resp)
+outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
+#nm_resp <- gsub("resid_", "resid", nm_resp)
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
 ########################################################################################
-
-#######################
-###merge models
-#######################
-
+dfs <- list.files(path = inpath, pattern = glob2rx("df_scl*"), full.names = F)
 models <- list.files(path = inpath, pattern = glob2rx("indv_model*"), full.names = TRUE)
 
-mod_all <- list()
 run_all <- c()
-for (i in seq(length(models))){
-  mod <- get(load(file = models[i]))
-  nm <- strsplit(x = models[i], split = "_|\\.")
-  resp <- nm[[1]][length(nm[[1]])-1]#####################################################sollte auf dauer anders (relativ) angegeben werden!
-  run <- nm[[1]][length(nm[[1]])-4]
-  mod_all[[paste0(resp, "_", run)]] <- mod
-  run_all <- c(run_all, run)
-}
-run_all <- unique(run_all)
-run_all_srt <- mixedsort(run_all)
-#save(mod_all, file = paste0(inpath, "/pls_model_list_all.RData"))
+#run_all
+model_strsplits <- unique(strsplit(x = paste(models, collapse=""), split = "_")[[1]])
+run_all_srt <- mixedsort(model_strsplits[grep("run", model_strsplits)])
 
 
-mod_lst <- lapply(nm_resp, function(x){
-  all_runs <- mod_all[grep(paste0("^", x), names(mod_all))]
-  return(all_runs)
-})
-names(mod_lst) <- nm_resp
 
-save(mod_lst, file = paste0(inpath, "/pls_model_list_all_lst.RData"))
-
-### check testing plots for each run
-outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
 for (i in seq(length(outs_lst))){
   names(outs_lst)[[i]] <- run_all_srt[[i]]
 }
+########replace##############################################################################################################jac with _jac_...
+# for (i in models){
+prediction_rep <- lapply(models, function(i){
+  #print(i)
+  nm <- strsplit(x = i, split = "_|\\.")
+  resp <- nm[[1]][length(nm[[1]])-1]####################sollte auf dauer anders (relativ) angegeben werden!
+  resp <- gsub("jne", "_jne_", resp) #####################sollte auf dauer in ein gsub statement zsuammengefasst werden
+  resp <- gsub("jac", "_jac_", resp)
+  resp <- gsub("jtu", "_jtu_", resp)
+  resp <- gsub("height", "_height_", resp)
+  resp <- gsub("width", "_width_", resp)
+  resp <- gsub("body", "body_", resp)
+  resp <- gsub("kipps", "kipps_", resp)
+  resp <- gsub("tarsus", "_tarsus_", resp)
+  resp <- gsub("wing", "_wing_", resp)
 
-###predict in repeated
-####rename df_scls per hand resid_ zu resid
-dfs <- list.files(path = inpath, pattern = glob2rx("df_scl*"), full.names = F)
+  run <- nm[[1]][length(nm[[1]])-4]
+  run_indx <- as.numeric(gsub("[[:alpha:]]", "", run))
 
-prediction_rep <- lapply(names(mod_lst), function(y){
-  if (length(mod_lst[[y]]) != 0){
-    df_scl <- get(load(paste0(inpath, dfs[grep(paste0("^", "df_scl_", y), dfs)])))
-    print(y)
-    prediction_run <- lapply(seq(length(mod_lst[[y]])), function(z){
-      print(z)
-      outs <- outs_lst[[grep(paste0(z, "$"), names(outs_lst))]]$plotID
-      new_df <- df_scl[which(df_scl$plotID %in% outs),]
-      colnames(new_df)[5] <- y#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
-      prediction <- predict(mod_lst[[y]][[paste0(y, "_run", z)]], newdata = new_df)
-      stats <- postResample(prediction, new_df[[y]])
-      return(stats)
-    })
-    prediction_run_mat <- do.call(rbind, prediction_run)
-  }
+  #load single models
+  # mod_nm <- models[grepl(resp, models) & grepl(run, models)]
+  #print(mod_nm)
+  mod <- get(load(file = i))
+  
+  ###hier var imp und eventuell anderes f�r heatmap berechnen!
+  # varimp <- varImp(mod)
+  # mod$selectedvars
+  # mod$selectedvars_perf
+  # mod$selectedvars_perf_SE
+  # mod$perf_all
+  # plot_ffs(mod)
+  # fit(mod)
+
+  
+  
+  
+  df_scl <- get(load(paste0(inpath, dfs[grep(paste0("_", resp), dfs)])))
+  
+  outs <- outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotID #1$ means search for 1 at end of line
+  new_df <- df_scl[which(df_scl$plotID %in% outs),]
+  colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
+  prediction <- predict(mod, newdata = new_df)
+  stats <- postResample(prediction, new_df[[resp]])
+  return(list(stats = stats, name = resp))
+  #return(stats)
 })
-names(prediction_rep) <- names(mod_lst)
 
-# df_resp <- as.data.frame(prediction_rep$SRmammals)
-# df_resp$resp <- "SRmammals"
+stats_lst <- do.call(rbind, prediction_rep)
 
-df_resp_all <- data.frame(matrix(nrow=0, ncol=4))
-for (i in names(mod_lst)){
-  if (!is.null(prediction_rep[[i]])){
-    print(i)
-    df_resp <- as.data.frame(prediction_rep[[i]])
-    df_resp$resp <- i
-    df_resp_all <- rbind(df_resp_all, df_resp)
-  }
+
+stats <- data.frame()
+names <- for (x in (seq(nrow(stats_lst)))){
+  resp <- stats_lst[x,]$name
+  nmbrs <- data.frame(t(stats_lst[x,]$stats))
+  tmp <- data.frame(resp = resp, 
+                          RMSE = nmbrs$RMSE, 
+                          Rsquared = nmbrs$Rsquared, 
+                          MAE = nmbrs$MAE)
+  stats <- rbind(stats, tmp)
 }
 
-save(df_resp_all, file = paste0(inpath, "df_resp_all_for_plotting.RData"))
+#load(file = paste0(inpath, "stats.RData"))
+
+#####other statistical values (not from within postResample)
+stats_smry <- as.data.frame(ddply(stats,~resp,summarise,
+                             meanR2 = mean(Rsquared),
+                             medianR2 = median(Rsquared),
+                             sdR2 = sd(Rsquared), 
+                             meanRMSE = mean(RMSE),
+                             medianRMSE = median(RMSE),
+                             sdRMSE = sd(RMSE)))
+
+stats <- merge(stats, stats_smry)
+
+stats$RMSE_norm_by_sd <- NA
+for (i in unique(stats$resp)){
+  tmp <- stats[which(stats$resp == i),]
+
+  stats$RMSE_norm_by_sd[which(stats$resp == i)] <- stats$RMSE[which(stats$resp == i)]/stats$sdRMSE[which(stats$resp == i)]
+}
+
+save(stats, file = paste0(inpath, "stats.RData"))
