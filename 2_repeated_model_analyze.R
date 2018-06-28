@@ -51,6 +51,7 @@ for (i in seq(length(outs_lst))){
 }
 ########replace##############################################################################################################jac with _jac_...
 # for (i in models){
+#pdf(file = paste0(outpath, "plot_ffs.pdf")) ###only uncomment with plot argument and dev.off argument
 prediction_rep <- lapply(models, function(i){
   #print(i)
   nm <- strsplit(x = i, split = "_|\\.")
@@ -73,16 +74,17 @@ prediction_rep <- lapply(models, function(i){
   #print(mod_nm)
   mod <- get(load(file = i))
   
-  ###hier var imp und eventuell anderes f�r heatmap berechnen!
-  # varimp <- varImp(mod)
-  # mod$selectedvars
-  # mod$selectedvars_perf
-  # mod$selectedvars_perf_SE
-  # mod$perf_all
-  # plot_ffs(mod)
-  # fit(mod)
-
+  ###plot all models in one pdf (lange rechenzeit)
+  # p <- (plot_ffs(mod)+ggtitle(nm))
+  # ggsave(filename = paste0(outpath, "plot_ffs_", resp, ".pdf"), plot = p, width = 25,
+  #        height = 25, units = "cm")
   
+  ###hier var imp und eventuell anderes f�r heatmap berechnen!
+  varimp <- varImp(mod)$importance
+  selvars <- mod$selectedvars
+  selvars_perf <- mod$selectedvars_perf
+  selvars_perf_SE <- mod$selectedvars_perf_SE
+  perf_all <- mod$perf_all
   
   
   df_scl <- get(load(paste0(inpath, dfs[grep(paste0("_", resp), dfs)])))
@@ -92,24 +94,38 @@ prediction_rep <- lapply(models, function(i){
   colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
   prediction <- predict(mod, newdata = new_df)
   stats <- postResample(prediction, new_df[[resp]])
-  return(list(stats = stats, name = resp))
+  return(list(name = resp, 
+              stats = stats, 
+              varimp = varimp, 
+              selvars = selvars, 
+              selvars_perf = selvars_perf, 
+              selvars_perf_SE = selvars_perf_SE, 
+              perf_all = perf_all
+              ))
   #return(stats)
-})
 
+})
 stats_lst <- do.call(rbind, prediction_rep)
 
 
 stats <- data.frame()
-names <- for (x in (seq(nrow(stats_lst)))){
+varimp_lst <- list()
+for (x in (seq(nrow(stats_lst)))){
   resp <- stats_lst[x,]$name
   nmbrs <- data.frame(t(stats_lst[x,]$stats))
-  tmp <- data.frame(resp = resp, 
+  varimp <- stats_lst[x,]$varimp
+  tmp_stats <- data.frame(resp = resp, 
                           RMSE = nmbrs$RMSE, 
                           Rsquared = nmbrs$Rsquared, 
                           MAE = nmbrs$MAE)
-  stats <- rbind(stats, tmp)
+  #summarys
+  stats <- rbind(stats, tmp_stats)
+
+  varimp_lst[[resp]] <- varimp
+
 }
 
+saveRDS(varimp_lst, file = paste0(inpath, "varimp_lst.rds"))
 #load(file = paste0(inpath, "stats.RData"))
 
 #####other statistical values (not from within postResample)
@@ -131,3 +147,4 @@ for (i in unique(stats$resp)){
 }
 
 save(stats, file = paste0(inpath, "stats.RData"))
+
