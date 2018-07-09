@@ -17,7 +17,7 @@ library(grid)
 library(compositions)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
+sub <- "jun18_50m/60erFRST/2018-06-12_ffs_pls_cv_onlyForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -170,3 +170,4 @@ levelplot(rst, scales = list(x = list(rot=90, cex = 1, at = 1:7, labels = colnam
           col.regions = clr(101), 
           at = seq(0, 100, 10))
 dev.off()
+

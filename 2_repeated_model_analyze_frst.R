@@ -20,7 +20,7 @@ library(dplyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
+sub <- "jun18_50m/60erFRST/2018-06-12_ffs_pls_cv_onlyForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -126,7 +126,7 @@ for (x in (seq(nrow(stats_lst)))){
 }
 
 saveRDS(varimp_lst, file = paste0(inpath, "varimp_lst.rds"))
-#readRDS(file = paste0(inpath, "varimp_lst.rds"))
+#load(file = paste0(inpath, "stats.RData"))
 
 #####other statistical values (not from within postResample)
 stats_smry <- as.data.frame(ddply(stats,~resp,summarise,

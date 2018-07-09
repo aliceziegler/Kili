@@ -17,7 +17,7 @@ library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 #setwd("/media/memory02/users/aziegler/src")
-sub <- "jun18_50m/"
+sub <- "jul18_50m/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
 
@@ -70,7 +70,7 @@ rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 #comment for explenatory filename
 comm <- "_cv_onlyForest"
 ind_nums <- sort(unique(tbl$selID))
-frst <- T # set true if model should onlybe done for forested plots
+frst <- F # set true if model should onlybe done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
 if (file.exists(modDir)==F){
@@ -133,7 +133,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
 
-cl <- 11
+cl <- 15
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -154,7 +154,8 @@ registerDoParallel(cl)
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
 # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+#model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+  model <- foreach(i = (colnames(df_resp)[28:159]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################

@@ -13,7 +13,7 @@ library(ggplot2)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
+sub <- "jun18_50m/60erFRST/2018-06-12_ffs_pls_cv_onlyForest/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
@@ -25,10 +25,11 @@ if (file.exists(outpath)==F){
 ########################################################################################
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 stats <- get(load(paste0(inpath, "stats.RData")))
-#colnames(stats)[which(colnames(stats) == "Rsquared")] <- "R2"
 R2_df <- unique(data.frame(stats$resp, stats$meanR2))
 R2_df <- R2_df[order(R2_df$stats.meanR2, decreasing = T),]
 #write.csv(R2_df, file = paste0(outpath, "R2_df.csv"))
+#colnames(stats)[which(colnames(stats) == "Rsquared")] <- "R2"
+
 ###rename levels for naming of xlab-ticks ############ACHTUNG R² in spaltenüberschrift o_O############Lösung finden: gibt es eine andere Lösung für ggpot2??
 # levels(stats$resp) <- c( "all plants (resid)", "all animals (resid)", "ants (resid)", 
 #                                "asterids (resid)", "bats (resid)", "bees (resid)", 
@@ -130,6 +131,7 @@ plot_trop(df = df_plt_jtu_2, var = "RMSE_norm_by_sd", resp_title = "jtu2", comm 
 plot_trop(df = df_plt_jne_1, var = "RMSE_norm_by_sd", resp_title = "jne1", comm = "jne1")
 plot_trop(df = df_plt_jne_2, var = "RMSE_norm_by_sd", resp_title = "jne2", comm = "jne2")
 
+plot_trop(df = stats, var = "Rsquared", resp_title = "Taxa_all", comm = "taxa_all")
 ##norm by mean
 #jac einzeln raus
 #jtu

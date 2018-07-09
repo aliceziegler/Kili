@@ -24,15 +24,19 @@ outpath <- paste0("../data/", sub)
 ###Do it (Don't change anything past this point except you know what you are doing!)
 ########################################################################################
 
-load(paste0(inpath, "dat_SR.RData"))
-elev <- cbind(elevation = dat_SR$elevation)
+dat_SR <- get(load(paste0(inpath, "dat_SR.RData")))
+beta <- get(load(paste0(inpath, "beta_anm_plnt.RData")))
+elev <- data.frame(elevation = dat_SR$elevation, plotID = dat_SR$plotID)
+
+
+######Residuals SR data
 tbl <- cbind(plotID = dat_SR$plotID, 
              dat_SR[,c(which(colnames(dat_SR) %in% "SRmammals") : 
                          which(colnames(dat_SR) %in% "SRallplants"))])
 
 tbl_res <- tbl
 for (i in c(2:ncol(tbl))){
-  mod <- gam(tbl[,i] ~ s(elev, k = 5))
+  mod <- gam(tbl[,i] ~ s(elev$elevation, k = 5))
   tbl_res[!is.na(tbl[,i]),i] <- mod$residuals
   colnames(tbl_res)[i] <- paste0("resid", colnames(tbl_res)[i])
 }
@@ -41,10 +45,16 @@ save(tbl_res, file = paste0(outpath, "SR_residuals.RData"))
 
 
 
-###calculate R2
-for (i in c(2:ncol(tbl))){
-  mod <- gam(tbl[,i] ~ s(elev, k = 5))
-  prd <- predict(mod, tbl[,i])
-  tbl_res[!is.na(tbl[,i]),i] <- mod$residuals
-  colnames(tbl_res)[i] <- paste0("resid", colnames(tbl_res)[i])
+######Residuals beta diversity data
+elev_beta <- elev[which(elev$plotID %in% beta$plotID),]
+
+beta_res <- beta
+for (i in c(2:ncol(beta))){
+  mod <- gam(beta[,i] ~ s(elev_beta$elevation, k = 5))
+  beta_res[!is.na(beta[,i]),i] <- mod$residuals
+  colnames(beta_res)[i] <- paste0("resid", colnames(beta_res)[i])
 }
+
+save(beta_res, file = paste0(outpath, "beta_residuals.RData"))
+
+
