@@ -29,8 +29,8 @@ if (file.exists(outpath)==F){
 ########################################################################################
 ###Settings
 ########################################################################################
-load(file = paste0(inpath, "nm_pred.RData"))
-load(file = paste0(inpath, "nm_resp.RData"))
+nm_pred <- get(load(file = paste0(inpath, "nm_pred.RData")))
+nm_resp <- get(load(file = paste0(inpath, "nm_resp.RData")))
 outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
 #nm_resp <- gsub("resid_", "resid", nm_resp)
 ########################################################################################

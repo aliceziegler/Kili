@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jun18_50m/60erALL/2018-06-12_ffs_pls_cv/"
+sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
 datpath <- paste0("../data/")
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -29,14 +29,14 @@ stats_comb_all <- stats[, which(colnames(stats)%in% c("resp", "meanR2", "medianR
 stats_comb <- unique(stats_comb_all)
 
 ####subset of relevant plots
-all_plts <- T
-frst <- T
+all_plts <- F
+frst <- F
 
 if (all_plts == F){
   if (frst == T){
     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
   }else if (frst == F){
-    nonfrst_cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
 }
@@ -44,7 +44,7 @@ if (all_plts == F){
 
 
 
-df_resp <- tbl[,which(colnames(tbl) %in% stats_comb$resp)]
+df_resp <- tbl[,which(colnames(tbl) %in% stats_comb$resp)] 
 n_max <- as.numeric(nrow(df_resp))
 
 obs_nmbr <- data.frame(nrow(df_resp) - colSums(is.na(df_resp)))
@@ -52,4 +52,7 @@ colnames(obs_nmbr) <- paste0("nmbr_obs_of_", n_max)
 obs_nmbr$resp <- rownames(obs_nmbr)
 
 stats_Na <- merge(stats_comb, obs_nmbr, by = "resp")
-plot(stats_Na$meanR2, stats_Na$nmbr_obs_of_56)
+
+pdf(file = paste0(outpath, "R2_gg_nmb_obs.pdf"), width = 10, height = 7)
+plot(stats_Na$meanR2, stats_Na[,ncol(stats_Na)])
+dev.off()
