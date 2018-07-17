@@ -146,5 +146,5 @@ for (i in unique(stats$resp)){
   stats$RMSE_norm_by_sd[which(stats$resp == i)] <- stats$RMSE[which(stats$resp == i)]/stats$sdRMSE[which(stats$resp == i)]
 }
 
-save(stats, file = paste0(inpath, "stats.RData"))
+save(stats, file = paste0(outpath, "stats.RData"))
 

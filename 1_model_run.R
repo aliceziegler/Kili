@@ -68,10 +68,10 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_onlyForest"
+comm <- "_cv_noForest"
 ind_nums <- sort(unique(tbl$selID))
 all_plts <- F
-frst <- T # set true if model should onlybe done for forested plots
+frst <- F # set true if model should onlybe done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
 if (file.exists(modDir)==F){
@@ -86,7 +86,7 @@ if (all_plts == F){
   if (frst == T){
     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
   }else if (frst == F){
-    nonfrst_cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
   #tbl <- tbl[which(tbl$cat %in% cat),which(colSums(is.na(tbl)) < 15)]
@@ -99,7 +99,7 @@ df_pred_all <- tbl[, c(which(colnames(tbl) %in% nm_pred))]
 df_pred <- df_pred_all
 for (i in colnames(df_pred_all)){
   frq <- table(df_pred_all[i])
-  if (max(frq) > floor(nrow(df_pred_all) * 0.9)){
+  if (max(frq) > floor(nrow(df_pred_all) * 0.5)){
     df_pred <- df_pred[, !(colnames(df_pred) %in% i)]
   }
 }
@@ -138,7 +138,6 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-
 cl <- 15
 registerDoParallel(cl)
 
@@ -155,13 +154,14 @@ registerDoParallel(cl)
 #                      "SRsnails", "SRanimals", "SRrosids", "SRasterids", "SRmonocots", "SReudicots", "SRlycopodiopsida",
 #                      "SRconifers", "SRferns", "SRmagnoliids", "SRallplants"), .packages=c("caret", "CAST", "plyr"))%dopar%{
 
-# model <- foreach(i = colnames(df_resp), .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
 # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-  # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
-  #                     "tuneLength", "modDir", "type", "i"))
+# clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
+#                     "tuneLength", "modDir", "type", "i"))
 # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
 #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-  model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+#model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+#model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################
@@ -187,6 +187,7 @@ registerDoParallel(cl)
   
   
   for (j in seq(ind_nums)){
+    print(j)
     # #if some plot in outs_lst is now filtered, fill void with other plot of 
     # #that landuse by chance (problem with toolittle plot subset (eg. only forest))
     # for(k in seq(nrow(outs_lst[[j]]))){
