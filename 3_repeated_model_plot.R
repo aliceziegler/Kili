@@ -68,6 +68,8 @@ stats$troph <- factor(stats$troph, levels = c("generalist",
                                               "herbivore", 
                                               "decomposer", 
                                               "plant", 
+                                              "birds", 
+                                              "bats", 
                                               "summary", 
                                               "trait"))
 stats <- stats[with(stats, order(troph, resp)),] ####sortierung nach alphabet resp ist nicht sooo optimal, weil resids lfter zusammenstehen und nicht abwechselnd reisid und das entsprechende SR- eventuell "resid" hinten an namen dranschreiben
@@ -75,106 +77,108 @@ stats$resp <- factor(stats$resp, levels = unique(stats$resp))
 
 saveRDS(stats, file = paste0(outpath, "stats_troph.RDS"))
 
-##only resid: 
-df_plt_resid <- stats[grepl("resid", stats$resp)&grepl("SR", stats$resp),]
-#only species
-df_plt_SR_tmp <- stats[-grep("resid", stats$resp),]
-df_plt_SR <- df_plt_SR_tmp[grep("SR", df_plt_SR_tmp$resp),]
-
-###resid
-# only jac1
-df_plt_jac_1_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# only jac2
-df_plt_jac_2_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-# only jtu1
-df_plt_jtu_1_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# only jtu2
-df_plt_jtu_2_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-# only jne1
-df_plt_jne_1_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# only jne2
-df_plt_jne_2_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-
-##SR
-# only jac1
-df_plt_jac_1_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# only jac2
-df_plt_jac_2_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-# only jtu1
-df_plt_jtu_1_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# only jtu2
-df_plt_jtu_2_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-# only jne1
-df_plt_jne_1_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# only jne2
-df_plt_jne_2_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-
-
-
-
+# ##only resid alpha: 
+# df_plt_resid <- stats[grepl("resid", stats$resp)&grepl("SR", stats$resp),]
+# #only species alpha:
+# df_plt_SR_tmp <- stats[-grep("resid", stats$resp),]
+# df_plt_SR <- df_plt_SR_tmp[grep("SR", df_plt_SR_tmp$resp),]
+# 
+# ###resid
+# # only jac1
+# df_plt_jac_1_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
+# # only jac2
+# df_plt_jac_2_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
+# # only jtu1
+# df_plt_jtu_1_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
+# # only jtu2
+# df_plt_jtu_2_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
+# # only jne1
+# df_plt_jne_1_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
+# # only jne2
+# df_plt_jne_2_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
+# 
+# ##SR
+# # only jac1
+# df_plt_jac_1_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
+# # only jac2
+# df_plt_jac_2_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
+# # only jtu1
+# df_plt_jtu_1_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
+# # only jtu2
+# df_plt_jtu_2_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
+# # only jne1
+# df_plt_jne_1_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
+# # only jne2
+# df_plt_jne_2_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
+# 
 
 
 plot_trop <- function(df, var, names, resp_title, path = outpath, comm){
   #df$resp = reorder(df$resp, df[[var]], median)
-  
-  
   p <-ggplot(aes_string(x = "resp", y = var), data = df) +
     geom_boxplot(aes(fill = troph), lwd = 0.3) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 5)) +
     xlab(resp_title) +
     ylab(var)+
     guides(fill=guide_legend(title="trophic level"))
+  #pdf(file = paste0(outpath, "plot_", var, "_", resp_title, ".pdf"), width = 25, height = 25)
   print(p)
-  ggsave(filename = paste0(outpath, "plot_", var, "_", comm, ".pdf"), plot = p, width = 25,
-         height = 25, units = "cm")
-  
+  #ggsave(filename = paste0(outpath, "plot_", var, "_", comm, ".pdf"), plot = p, width = 25,
+         #height = 25, units = "cm")
+  #dev.off()
+}
+
+trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
+alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
+alpha_nm <- alpha_nm[-which(alpha_nm %in% trait_nm)]
+beta_nm <- unique(stats$resp[grepl("NMDS", stats$resp)])
+
+###divide alpha and beta by residuals and SR
+alpha_nm_SR <- alpha_nm[-grep("resid", alpha_nm)]
+alpha_nm_resid <- alpha_nm[grepl("resid", alpha_nm)]
+
+beta_nm_SR <- beta_nm[-grep("resid", beta_nm)]
+beta_nm_resid <- beta_nm[grepl("resid", beta_nm)]
+
+###divide by different beta measures (jac, jtu, jne) and NMDS1 oder NMDS2
+#NMDS1
+beta_nm_SR_jac1 <- beta_nm_SR[grepl("jac", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_SR_jtu1 <- beta_nm_SR[grepl("jtu", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_SR_jne1 <- beta_nm_SR[grepl("jne", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+
+beta_nm_resid_jac1 <- beta_nm_resid[grepl("jac", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_resid_jtu1 <- beta_nm_resid[grepl("jtu", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_resid_jne1 <- beta_nm_resid[grepl("jne", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+
+#NMDS2
+beta_nm_SR_jac2 <- beta_nm_SR[grepl("jac", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_SR_jtu2 <- beta_nm_SR[grepl("jtu", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_SR_jne2 <- beta_nm_SR[grepl("jne", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+
+beta_nm_resid_jac2 <- beta_nm_resid[grepl("jac", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_resid_jtu2 <- beta_nm_resid[grepl("jtu", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_resid_jne2 <- beta_nm_resid[grepl("jne", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+
+###responses you wish the plots for 
+#variations <- list (trait = trait_nm)
+variations <- list(trait = trait_nm, alpha_SR = alpha_nm_SR, alpha_resid = alpha_nm_resid, 
+                   beta_SR_jac1 = beta_nm_SR_jac1, beta_SR_jtu1 = beta_nm_SR_jtu1, 
+                   beta_SR_jne1 = beta_nm_SR_jne1, beta_resid_jac1 = beta_nm_resid_jac1, 
+                   beta_resid_jtu1 = beta_nm_resid_jtu1, beta_resid_jne1 = beta_nm_resid_jne1, 
+                   beta_SR_jac2 = beta_nm_SR_jac2, beta_SR_jtu2 = beta_nm_SR_jtu2, 
+                   beta_SR_jne2 = beta_nm_SR_jne2, beta_resid_jac2 = beta_nm_resid_jac2, 
+                   beta_resid_jtu2 = beta_nm_resid_jtu2, beta_resid_jne2 = beta_nm_resid_jne2)
+
+plots <- c("Rsquared", "RMSE", "RMSE_norm_by_sd", "RMSE_norm_by_mean")
+
+
+
+for (j in plots){
+  pdf(file = paste0(outpath, "boxplot_", j, ".pdf"), width = 12, height = 12)
+  for (i in seq(variations)){
+    tmp_stats <- stats[which(stats$resp %in% variations[[i]]),]
+    plot_trop(df = tmp_stats, var = j, resp_title = names(variations[i]))
+  }
   dev.off()
 }
 
-
-
-
-plot_trop(df = df_plt_resid, var = "RMSE", resp_title = "Taxa (Residuals)", comm = "res")
-plot_trop(df = df_plt_resid, var = "Rsquared", resp_title = "Taxa (Residuals)", comm = "res")
-plot_trop(df = df_plt_SR, var = "RMSE", resp_title = "Taxa", comm = "SR")
-plot_trop(df = df_plt_SR, var = "Rsquared", resp_title = "Taxa", comm = "SR")
-
-plot_trop(df = df_plt_SR, var = "RMSE_norm_by_sd", resp_title = "Taxa", comm = "SR")
-plot_trop(df = df_plt_resid, var = "RMSE_norm_by_sd", resp_title = "Taxa (Residuals)", comm = "res")
-#resid beta #RMSE norm
-plot_trop(df = df_plt_jac_1_resid, var = "RMSE_norm_by_sd", resp_title = "jac1", comm = "jac1_resid_rmsenorm")
-plot_trop(df = df_plt_jac_2_resid, var = "RMSE_norm_by_sd", resp_title = "jac2", comm = "jac2_resid_rmsenorm")
-plot_trop(df = df_plt_jtu_1_resid, var = "RMSE_norm_by_sd", resp_title = "jtu1", comm = "jtu1_resid_rmsenorm")
-plot_trop(df = df_plt_jtu_2_resid, var = "RMSE_norm_by_sd", resp_title = "jtu2", comm = "jtu2_resid_rmsenorm")
-plot_trop(df = df_plt_jne_1_resid, var = "RMSE_norm_by_sd", resp_title = "jne1", comm = "jne1_resid_rmsenorm")
-plot_trop(df = df_plt_jne_2_resid, var = "RMSE_norm_by_sd", resp_title = "jne2", comm = "jne2_resid_rmsenorm")
-#SR beta #RMSE norm
-plot_trop(df = df_plt_jac_1_SR, var = "RMSE_norm_by_sd", resp_title = "jac1", comm = "jac1_SR_rmsenorm")
-plot_trop(df = df_plt_jac_2_SR, var = "RMSE_norm_by_sd", resp_title = "jac2", comm = "jac2_SR_rmsenorm")
-plot_trop(df = df_plt_jtu_1_SR, var = "RMSE_norm_by_sd", resp_title = "jtu1", comm = "jtu1_SR_rmsenorm")
-plot_trop(df = df_plt_jtu_2_SR, var = "RMSE_norm_by_sd", resp_title = "jtu2", comm = "jtu2_SR_rmsenorm")
-plot_trop(df = df_plt_jne_1_SR, var = "RMSE_norm_by_sd", resp_title = "jne1", comm = "jne1_SR_rmsenorm")
-plot_trop(df = df_plt_jne_2_SR, var = "RMSE_norm_by_sd", resp_title = "jne2", comm = "jne2_SR_rmsenorm")
-
-#resid beta #R2
-plot_trop(df = df_plt_jac_1_resid, var = "Rsquared", resp_title = "jac1", comm = "jac1_resid_r2")
-plot_trop(df = df_plt_jac_2_resid, var = "Rsquared", resp_title = "jac2", comm = "jac2_resid_r2")
-plot_trop(df = df_plt_jtu_1_resid, var = "Rsquared", resp_title = "jtu1", comm = "jtu1_resid_r2")
-plot_trop(df = df_plt_jtu_2_resid, var = "Rsquared", resp_title = "jtu2", comm = "jtu2_resid_r2")
-plot_trop(df = df_plt_jne_1_resid, var = "Rsquared", resp_title = "jne1", comm = "jne1_resid_r2")
-plot_trop(df = df_plt_jne_2_resid, var = "Rsquared", resp_title = "jne2", comm = "jne2_resid_r2")
-#SR beta #R2
-plot_trop(df = df_plt_jac_1_SR, var = "Rsquared", resp_title = "jac1", comm = "jac1_SR_r2")
-plot_trop(df = df_plt_jac_2_SR, var = "Rsquared", resp_title = "jac2", comm = "jac2_SR_r2")
-plot_trop(df = df_plt_jtu_1_SR, var = "Rsquared", resp_title = "jtu1", comm = "jtu1_SR_r2")
-plot_trop(df = df_plt_jtu_2_SR, var = "Rsquared", resp_title = "jtu2", comm = "jtu2_SR_r2")
-plot_trop(df = df_plt_jne_1_SR, var = "Rsquared", resp_title = "jne1", comm = "jne1_SR_r2")
-plot_trop(df = df_plt_jne_2_SR, var = "Rsquared", resp_title = "jne2", comm = "jne2_SR_r2")
-
-
-##norm by mean
-#jac einzeln raus
-#jtu
-#jne
-
-     

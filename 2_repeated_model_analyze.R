@@ -32,6 +32,7 @@ if (file.exists(outpath)==F){
 nm_pred <- get(load(file = paste0(inpath, "nm_pred.RData")))
 nm_resp <- get(load(file = paste0(inpath, "nm_resp.RData")))
 outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
+mrg_tbl <- get(load(paste0(inpath, "../dat_ldr_mrg.RData")))
 #nm_resp <- gsub("resid_", "resid", nm_resp)
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
@@ -88,6 +89,7 @@ prediction_rep <- lapply(models, function(i){
   
   
   df_scl <- get(load(paste0(inpath, dfs[grep(paste0("_", resp), dfs)])))
+
   
   outs <- outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotID #1$ means search for 1 at end of line
   new_df <- df_scl[which(df_scl$plotID %in% outs),]
@@ -140,10 +142,17 @@ stats_smry <- as.data.frame(ddply(stats,~resp,summarise,
 stats <- merge(stats, stats_smry)
 
 stats$RMSE_norm_by_sd <- NA
-for (i in unique(stats$resp)){
-  tmp <- stats[which(stats$resp == i),]
+for (k in unique(stats$resp)){
+  tmp <- stats[which(stats$resp == k),]
 
-  stats$RMSE_norm_by_sd[which(stats$resp == i)] <- stats$RMSE[which(stats$resp == i)]/stats$sdRMSE[which(stats$resp == i)]
+  stats$RMSE_norm_by_sd[which(stats$resp == k)] <- stats$RMSE[which(stats$resp == k)]/stats$sdRMSE[which(stats$resp == k)]
+}
+
+stats$RMSE_norm_by_mean <- NA
+for (j in unique(stats$resp)){
+  tmp <- stats[which(stats$resp == j),]
+  tmp_mean <- mean(mrg_tbl[,which(colnames(mrg_tbl) == j)], na.rm = T)
+  stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
 }
 
 save(stats, file = paste0(inpath, "stats.RData"))

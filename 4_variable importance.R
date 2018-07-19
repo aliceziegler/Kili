@@ -88,28 +88,50 @@ for (i in seq(length(varimp_lst))){
 }
 #create crosstable with responses as colnames and predictors as rows
 varimp_df <- Reduce(function(x, y) {merge(x, y, by = "pred", all=T)}, varimp_lst)
+varimp_df[is.na(varimp_df)] <- 0
 #saveRDS(varimp_df, file = paste0(outpath, "varimp_df.RDS"))
 varimp_df[2:ncol(varimp_df)] <- varimp_df[,2:ncol(varimp_df)]/100
 
+#sort varimp_df nach trophischen levels
+#transpose um nach Spalten zu sortieren. nach levels sortieren, wenn die in verschiedenen spalten stehen geht nicht/
+#weiß ich nciht wie/ist extrem umständlich
+varimp_df_t <- data.frame(t(varimp_df))
+colnames(varimp_df_t) <- as.character(unlist(varimp_df_t[1,]))
+varimp_df_t$resp <- rownames(varimp_df_t)
+varimp_troph_t <- merge(varimp_df_t[-1,], troph_grp, by = "resp")
+varimp_troph_srt <- varimp_troph_t[with(varimp_troph_t, order(troph, resp)),]
+#transpose wieder zurück
+rownames(varimp_troph_srt) <- varimp_troph_srt[,1]
+varimp_troph_meta <- t(varimp_troph_srt)
+varimp_troph_meta_pred <- data.frame(pred = rownames(varimp_troph_meta), varimp_troph_meta)
+varimp_troph <- varimp_troph_meta_pred[c(2:(nrow(varimp_troph_meta_pred)-1)),
+                                       -which(colnames(varimp_troph_meta_pred) == "pred")]
+for (i in seq(ncol(varimp_troph))){
+  varimp_troph[,i] <- as.numeric(levels(varimp_troph[,i]))[varimp_troph[,i]]
+}
+# test <- as.data.frame(sapply(varimp_troph, as.character ))
+# test2 <- as.data.frame(sapply(test, as.numeric))
 
+varimp_tmp_lst <- as.list(varimp_troph)
+varimp_mat <- do.call("cbind", varimp_tmp_lst[])
 ######################
 ######################
 ##Einschub
 ######################
 ######################
-###sort var imp
-tmp <- varimp_df[as.character(troph_grp$resp)]
-varimp_df <- data.frame(pred = varimp_df$pred, tmp)
+###var imp
+# tmp <- varimp_df[as.character(troph_grp$resp)]
+# varimp_df <- data.frame(pred = varimp_df$pred, tmp)
 #count number of times variable was included in model
-var_cnt_c <- (ncol(varimp_df) -1)- rowSums(is.na(varimp_df))
-var_cnt <- data.frame(pred = varimp_df$pred, count = var_cnt_c)
-var_cnt <- var_cnt[with(var_cnt, order(count)),]
-varimp_df <- varimp_df[match(as.character(var_cnt$pred), varimp_df$pred),]
+# var_cnt_c <- (ncol(varimp_df) -1)- rowSums(varimp_df == 0)
+# var_cnt <- data.frame(pred = varimp_df$pred, count = var_cnt_c)
+# var_cnt <- var_cnt[with(var_cnt, order(count, decreasing = T)),]
+# varimp_df <- varimp_df[match(as.character(var_cnt$pred), varimp_df$pred),]
 #
 #
 #
 #
-###einschub funktion rasterplot
+### funktion rasterplot
 lvlplt <- function(mat, filename, wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(0,1,0.1)){
   xdim <- dim(mat)[2]
   ydim <- dim(mat)[1]
@@ -118,14 +140,11 @@ lvlplt <- function(mat, filename, wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(
   print(levelplot(rst, scales = list(x = list(rot=90, cex = 0.35, at = 1:xdim, labels = lbl_x), 
                                y = list(at = c(ydim:1), cex = 0.35, labels = lbl_y)), 
             margin = FALSE, 
+            main = list(filename,side=1,line=0.5), 
             col.regions = clr(101), 
             at = rnge))
   dev.off()
 }
-
-
-varimp_tmp_lst <- as.list(varimp_df[,-which(colnames(varimp_df) == "pred")])
-varimp_mat <- do.call("cbind", varimp_tmp_lst[])
 
 
 #for loops über "variations"
@@ -134,7 +153,7 @@ varimp_mat <- do.call("cbind", varimp_tmp_lst[])
 for (i in seq(variations)){
   mat <- varimp_mat[,which(colnames(varimp_mat) %in% variations[[i]]), drop = FALSE]
   lvlplt(mat = mat, filename = paste0(outpath, "heat_std_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(mat), lbl_y = varimp_df$pred)
+         lbl_x = colnames(mat), lbl_y = varimp_troph$pred)
 }
 
 
@@ -176,7 +195,7 @@ for (i in seq(variations)){
   agg_troph_lst <- as.list(agg_troph[, -which(colnames(agg_troph) == "troph_grp")])
   agg_troph_mat <- do.call("cbind", agg_troph_lst[])
   lvlplt(mat = agg_troph_mat, filename = paste0(outpath, "heat_varimp_grp_troph_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp)
+         lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp, rnge = seq(0,0.1,0.001))
 }
 
 

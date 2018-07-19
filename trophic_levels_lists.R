@@ -28,6 +28,8 @@ trophic_tbl$diet <- factor(trophic_tbl$diet, levels = c("predator",
                                                         "decomposer", 
                                                         "herbivore", 
                                                         "plant", 
+                                                        "birds", 
+                                                        "bats", 
                                                         "summary", 
                                                         "trait"
                                                         ))
