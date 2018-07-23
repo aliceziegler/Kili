@@ -17,7 +17,8 @@ library(grid)
 library(compositions)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
+sub <- "jul18_50m/2018-07-18_ffs_pls_cv_onlyForest/"
+# sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -29,7 +30,7 @@ varimp_lst <- readRDS(paste0(inpath, "varimp_lst.rds"))
 stats <- readRDS(paste0(outpath, "stats_troph.RDS"))
 troph_grp <- unique(data.frame(stats$resp, stats$troph))
 colnames(troph_grp) <- c("resp", "troph")
-pred_grp <- readRDS(file = paste0(inpath, "pred_grp.RDS"))####################woanders hinlegen und woanders hernehmen.
+pred_grp <- readRDS(file = paste0(inpath, "../pred_grp.RDS"))####################woanders hinlegen und woanders hernehmen.
 
 #####plotting properties
 clr <- colorRampPalette(brewer.pal(9, "YlOrRd"))

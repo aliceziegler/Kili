@@ -12,7 +12,7 @@ library(ggplot2)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
+sub <- "jul18_50m/2018-07-18_ffs_pls_cv_onlyForest/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
