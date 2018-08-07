@@ -17,7 +17,7 @@ library(grid)
 library(compositions)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-18_ffs_pls_cv_onlyForest/"
+sub <- "jul18_50m/2018-08-05_ffs_pls_cv_noForest_noslpasp/"
 # sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -52,22 +52,22 @@ beta_nm_resid <- beta_nm[grepl("resid", beta_nm)]
 
 ###divide by different beta measures (jac, jtu, jne) and NMDS1 oder NMDS2
 #NMDS1
-beta_nm_SR_jac1 <- beta_nm_SR[-grep("jac", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
-beta_nm_SR_jtu1 <- beta_nm_SR[-grep("jtu", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
-beta_nm_SR_jne1 <- beta_nm_SR[-grep("jne", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_SR_jac1 <- beta_nm_SR[-grepl("jac", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_SR_jtu1 <- beta_nm_SR[-grepl("jtu", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_SR_jne1 <- beta_nm_SR[-grepl("jne", beta_nm_SR)&grepl("NMDS1", beta_nm_SR)]
 
-beta_nm_resid_jac1 <- beta_nm_resid[-grep("jac", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
-beta_nm_resid_jtu1 <- beta_nm_resid[-grep("jtu", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
-beta_nm_resid_jne1 <- beta_nm_resid[-grep("jne", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_resid_jac1 <- beta_nm_resid[-grepl("jac", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_resid_jtu1 <- beta_nm_resid[-grepl("jtu", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
+beta_nm_resid_jne1 <- beta_nm_resid[-grepl("jne", beta_nm_resid)&grepl("NMDS1", beta_nm_SR)]
 
 #NMDS2
-beta_nm_SR_jac2 <- beta_nm_SR[-grep("jac", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
-beta_nm_SR_jtu2 <- beta_nm_SR[-grep("jtu", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
-beta_nm_SR_jne2 <- beta_nm_SR[-grep("jne", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_SR_jac2 <- beta_nm_SR[-grepl("jac", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_SR_jtu2 <- beta_nm_SR[-grepl("jtu", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_SR_jne2 <- beta_nm_SR[-grepl("jne", beta_nm_SR)&grepl("NMDS2", beta_nm_SR)]
 
-beta_nm_resid_jac2 <- beta_nm_resid[-grep("jac", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
-beta_nm_resid_jtu2 <- beta_nm_resid[-grep("jtu", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
-beta_nm_resid_jne2 <- beta_nm_resid[-grep("jne", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_resid_jac2 <- beta_nm_resid[-grepl("jac", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_resid_jtu2 <- beta_nm_resid[-grepl("jtu", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
+beta_nm_resid_jne2 <- beta_nm_resid[-grepl("jne", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
 
 # variations <- c("trait_nm", "alpha_nm_SR", "alpha_nm_resid", 
 #                 "beta_nm_SR_jac1", "beta_nm_SR_jtu1", "beta_nm_SR_jne1", 
@@ -133,30 +133,31 @@ varimp_mat <- do.call("cbind", varimp_tmp_lst[])
 #
 #
 ### funktion rasterplot
-lvlplt <- function(mat, filename, wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(0,1,0.1)){
+lvlplt <- function(mat, name, font_sz = 0.35, #filename, 
+                   wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(0,1,0.1)){
   xdim <- dim(mat)[2]
   ydim <- dim(mat)[1]
   rst <- raster(mat, xmn = 0.5, xmx = (xdim+0.5), ymn = 0.5, ymx = ydim+0.5)
-  pdf(file = filename, width = wdth, height = hght)
-  print(levelplot(rst, scales = list(x = list(rot=90, cex = 0.35, at = 1:xdim, labels = lbl_x), 
-                               y = list(at = c(ydim:1), cex = 0.35, labels = lbl_y)), 
+  # pdf(file = filename, width = wdth, height = hght)
+  print(levelplot(rst, scales = list(x = list(rot=90, cex = font_sz, at = 1:xdim, labels = lbl_x), 
+                               y = list(at = c(ydim:1), cex = font_sz, labels = lbl_y)), 
             margin = FALSE, 
-            main = list(filename,side=1,line=0.5), 
+            #main = list(name,side=1,line=0.5), 
             col.regions = clr(101), 
             at = rnge))
-  dev.off()
+  # dev.off()
 }
 
 
 #for loops über "variations"
 
 ###standard plot
+pdf(file = paste0(outpath, "heat_std.pdf"), width = 10, height = 7)
 for (i in seq(variations)){
   mat <- varimp_mat[,which(colnames(varimp_mat) %in% variations[[i]]), drop = FALSE]
-  lvlplt(mat = mat, filename = paste0(outpath, "heat_std_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(mat), lbl_y = varimp_troph$pred)
+  lvlplt(mat = mat, lbl_x = colnames(mat), lbl_y = rownames(varimp_troph))
 }
-
+dev.off()
 
 ###normalised (R2)
 varimp_nrm_df <- varimp_df
@@ -165,11 +166,13 @@ for (i in c(2:ncol(varimp_df))){
 }
 varimp_tmp_lst <- as.list(varimp_nrm_df[,-which(colnames(varimp_nrm_df) == "pred")])
 varimp_mat <- do.call("cbind", varimp_tmp_lst[])
+
+pdf(file = paste0(outpath, "heat_nrmR2.pdf"), width = 10, height = 7)
 for (i in seq(variations)){
   mat <- varimp_mat[,which(colnames(varimp_mat) %in% variations[[i]]), drop = FALSE]
-  lvlplt(mat = mat, filename = paste0(outpath, "heat_nrmR2_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(mat), lbl_y = varimp_nrm_df$pred, rnge = seq(0, 0.1, 0.001))
+  lvlplt(mat = mat, lbl_x = colnames(mat), lbl_y = rownames(varimp_troph), rnge = seq(0, 0.1, 0.001))
 }
+dev.off()
 ####normalisieren andere möglichkeiten
 
 
@@ -186,7 +189,8 @@ varimp_t$resp <- row.names(varimp_t)
 
 
 ###group by responses trophic level
-varimp_troph <- merge(varimp_t, troph_grp, by = "resp")
+varimp_troph <- merge(varimp_t, troph_grp, by = "resp") #############################################ungünstig, weil variablenname vorher schon vergeben ist...absicht?
+pdf(file = paste0(outpath, "heat_varimp_grp_troph.pdf"), width = 10, height = 7)
 for (i in seq(variations)){
   varimp_troph_tmp <- varimp_troph[which(varimp_troph$resp %in% variations[[i]]),]
   agg_troph <- aggregate(varimp_troph_tmp, by = list(varimp_troph_tmp$troph), FUN = mean, na.rm = T) #######was ist hier los....14 NAs...fehlen da werte=? (bei noForest)
@@ -195,15 +199,16 @@ for (i in seq(variations)){
   
   agg_troph_lst <- as.list(agg_troph[, -which(colnames(agg_troph) == "troph_grp")])
   agg_troph_mat <- do.call("cbind", agg_troph_lst[])
-  lvlplt(mat = agg_troph_mat, filename = paste0(outpath, "heat_varimp_grp_troph_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp, rnge = seq(0,0.1,0.001))
+  lvlplt(mat = agg_troph_mat, lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp, rnge = seq(0,0.1,0.001))
 }
+dev.off()
 
 
 ###group by predictorsand then by predictors and trophic levels
 
 varimp_pred_grp <- merge(varimp_df, pred_grp, by = "pred")
-for (i in seq(variations)){
+pdf(file = paste0(outpath, "heat_varimp_grp_pred_AND_grp.pdf"), width = 10, height = 7)
+for (i in seq(variations)){############################################################################diese zusammenlegung der beiden gruppierungen sollte auf dauer aufgelöst werden!
   varimp_pred_grp_tmp <- varimp_pred_grp[,which(colnames(varimp_pred_grp) %in% c(variations[[i]], "pred", "grp")), drop = F]
   agg_pred <- aggregate(varimp_pred_grp_tmp, by = list(varimp_pred_grp_tmp$grp), FUN = mean, na.rm = T)########woher kommen die ganzen NAs
   agg_pred <- agg_pred[,-c(2, ncol(agg_pred))]
@@ -211,8 +216,7 @@ for (i in seq(variations)){
   
   agg_pred_lst <- as.list(agg_pred[, -which(colnames(agg_pred) == "pred_grp")])
   agg_pred_mat <- do.call("cbind", agg_pred_lst[])
-  lvlplt(mat = agg_pred_mat, filename = paste0(outpath, "heat_varimp_grp_pred_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(agg_pred_mat), lbl_y = agg_pred$pred_grp)
+  lvlplt(mat = agg_pred_mat, font_sz = 0.5, lbl_x = colnames(agg_pred_mat), lbl_y = agg_pred$pred_grp)
   
   ###group by trophic levels and predictors
   agg_tbl <- agg_pred
@@ -233,9 +237,8 @@ for (i in seq(variations)){
   agg_vi_lst <- as.list(agg_all_df[, -which(colnames(agg_all_df) == "troph")])
   agg_vi_mat <- do.call("cbind", agg_vi_lst[])
   agg_vi_mat <- agg_vi_mat/max(agg_vi_mat, na.rm = T)
-  lvlplt(mat = agg_vi_mat, filename = paste0(outpath, "heat_varimp_grp_", names(variations[i]), ".pdf"), 
-         lbl_x = colnames(agg_vi_mat), lbl_y = as.character(agg_all_df$troph), rnge = seq(0, 1, 0.1))
+  lvlplt(mat = agg_vi_mat, font_sz = 0.5, lbl_x = colnames(agg_vi_mat), lbl_y = as.character(agg_all_df$troph), rnge = seq(0, 1, 0.1))
 }
-
+dev.off()
 
 

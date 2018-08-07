@@ -32,16 +32,29 @@ outpath <- paste0("../data/", sub)
 tbl_nm <- "dat_ldr_mrg.RData"
 ###choose relevant columns
 tbl_rw <- get(load(paste0(inpath, tbl_nm)))
+# auswahl mit slope und aspect variablen aber ohne höhe
+# tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
+#               which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "BE_ELEV_ASPECT"), 
+#               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
+#               which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
+#               which(colnames(tbl_rw) %in% "dtm_aspect_mean") : which(colnames(tbl_rw) %in% "dtm_aspect_unweighted_mean"), 
+#               which(colnames(tbl_rw) %in% "dtm_elevation_sd") : which(colnames(tbl_rw) %in% "dtm_surface_ratio"), 
+#               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
+#               which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
+#               which(colnames(tbl_rw) %in% "vegetation_coverage_01m") : which(colnames(tbl_rw) %in% "vegetation_coverage_10m"), 
+#               which(colnames(tbl_rw) %in% "mdn_rtrn") : which(colnames(tbl_rw) %in% "sd_rtrn_1"),
+#               which(colnames(tbl_rw) %in% "gap_frac"))
+
+# ohne slope und aspect und ohne höhe
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "BE_ELEV_ASPECT"), 
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "AGB"), 
               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
               which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
-              which(colnames(tbl_rw) %in% "dtm_aspect_mean") : which(colnames(tbl_rw) %in% "dtm_aspect_unweighted_mean"), 
-              which(colnames(tbl_rw) %in% "dtm_elevation_sd") : which(colnames(tbl_rw) %in% "dtm_surface_ratio"), 
               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
               which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
               which(colnames(tbl_rw) %in% "vegetation_coverage_01m") : which(colnames(tbl_rw) %in% "vegetation_coverage_10m"), 
-              which(colnames(tbl_rw) %in% "mdn_rtrn") : which(colnames(tbl_rw) %in% "sd_rtrn_1"),
+              which(colnames(tbl_rw) %in% "mdn_rtrn"), 
+              which(colnames(tbl_rw) %in% "sd_rtrn_1"),
               which(colnames(tbl_rw) %in% "gap_frac"))
 ###
 # tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelÃ¶st werden 
@@ -68,10 +81,10 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_onlyForest"
+comm <- "_cv_noForest_noslpasp"
 ind_nums <- sort(unique(tbl$selID))
 all_plts <- F
-frst <- T # set true if model should onlybe done for forested plots
+frst <- F # set true if model should only be done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
 if (file.exists(modDir)==F){
@@ -138,7 +151,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 15
+cl <- 4
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -154,14 +167,14 @@ registerDoParallel(cl)
 #                      "SRsnails", "SRanimals", "SRrosids", "SRasterids", "SRmonocots", "SReudicots", "SRlycopodiopsida",
 #                      "SRconifers", "SRferns", "SRmagnoliids", "SRallplants"), .packages=c("caret", "CAST", "plyr"))%dopar%{
 
-#model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
 # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
 # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
 #                     "tuneLength", "modDir", "type", "i"))
 # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
 #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
 #model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+#model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################

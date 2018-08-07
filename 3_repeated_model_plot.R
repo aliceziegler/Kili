@@ -9,16 +9,18 @@ rm(list=ls())
 ########################################################################################
 #Packages: 
 library(ggplot2)
+library(RColorBrewer)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-18_ffs_pls_cv_onlyForest/"
+sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
   dir.create(file.path(outpath), recursive = T)
 }
+
 ########################################################################################
 ###actual plotting
 ########################################################################################
@@ -51,10 +53,10 @@ R2_df <- R2_df[order(R2_df$stats.meanR2, decreasing = T),]
 ###########################################
 ###trophic levels for every row
 ###########################################
-toMatch <- trophic_tbl$Taxon
+
 for (x in seq(nrow(stats))){
   trop <- NA
-  for (i in toMatch){
+  for (i in trophic_tbl$Taxon){
     match <- grep(i, stats[x,"resp"], value=TRUE)
     if (length(match) != 0){
       trop <- trophic_tbl$diet[trophic_tbl$Taxon == i]
@@ -77,56 +79,25 @@ stats$resp <- factor(stats$resp, levels = unique(stats$resp))
 
 saveRDS(stats, file = paste0(outpath, "stats_troph.RDS"))
 
-# ##only resid alpha: 
-# df_plt_resid <- stats[grepl("resid", stats$resp)&grepl("SR", stats$resp),]
-# #only species alpha:
-# df_plt_SR_tmp <- stats[-grep("resid", stats$resp),]
-# df_plt_SR <- df_plt_SR_tmp[grep("SR", df_plt_SR_tmp$resp),]
-# 
-# ###resid
-# # only jac1
-# df_plt_jac_1_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# # only jac2
-# df_plt_jac_2_resid <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-# # only jtu1
-# df_plt_jtu_1_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# # only jtu2
-# df_plt_jtu_2_resid <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-# # only jne1
-# df_plt_jne_1_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&grepl("resid", stats$resp)),]
-# # only jne2
-# df_plt_jne_2_resid <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&grepl("resid", stats$resp)),]
-# 
-# ##SR
-# # only jac1
-# df_plt_jac_1_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# # only jac2
-# df_plt_jac_2_SR <- stats[(grepl("jac", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-# # only jtu1
-# df_plt_jtu_1_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# # only jtu2
-# df_plt_jtu_2_SR <- stats[(grepl("jtu", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-# # only jne1
-# df_plt_jne_1_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS1", stats$resp)&!grepl("resid", stats$resp)),]
-# # only jne2
-# df_plt_jne_2_SR <- stats[(grepl("jne", stats$resp)&grepl("NMDS2", stats$resp)&!grepl("resid", stats$resp)),]
-# 
+###colour settings
+myColors <- brewer.pal(9,"Set1")
+names(myColors) <- levels(stats$troph)
+fillScale <- scale_fill_manual(name = "troph_col",values = myColors)
 
-
-plot_trop <- function(df, var, names, resp_title, path = outpath, comm){
+plot_trop <- function(df, var, names, resp_title, smmry = "resp", path = outpath, comm){
   #df$resp = reorder(df$resp, df[[var]], median)
-  p <-ggplot(aes_string(x = "resp", y = var), data = df) +
+  p <-ggplot(aes_string(x = smmry, y = var, fill = "troph_col"), data = df) +
     geom_boxplot(aes(fill = troph), lwd = 0.3) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 5)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
     xlab(resp_title) +
     ylab(var)+
-    guides(fill=guide_legend(title="trophic level"))
-  #pdf(file = paste0(outpath, "plot_", var, "_", resp_title, ".pdf"), width = 25, height = 25)
+    guides(fill=guide_legend(title="trophic level"))+
+    fillScale
   print(p)
-  #ggsave(filename = paste0(outpath, "plot_", var, "_", comm, ".pdf"), plot = p, width = 25,
-         #height = 25, units = "cm")
-  #dev.off()
 }
+
+plot_trop(df = tmp_stats, var = "Rsquared", resp_title = names(variations[1]))
+
 
 trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
 alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
@@ -181,4 +152,103 @@ for (j in plots){
   }
   dev.off()
 }
+
+##mean plots
+df_mean <- aggregate(stats, by = list(stats$resp), FUN = mean)
+df_mean <- cbind(df_mean$Group.1, df_mean[,3:ncol(df_mean)])
+colnames(df_mean)[1] <- "resp"
+#df_mean <- aggregate(Rsquared~resp+troph, stats, FUN = mean)
+# troph_df <- data.frame(stats$resp, stats$troph)
+# colnames(troph_df) <- c("resp", "troph")
+
+for (x in seq(nrow(df_mean))){
+  trop <- NA
+  for (i in trophic_tbl$Taxon){
+    match <- grep(i, df_mean[x,"resp"], value=TRUE)
+    if (length(match) != 0){
+      trop <- trophic_tbl$diet[trophic_tbl$Taxon == i]
+    }
+  }
+  df_mean$troph[x] <- as.character(trop)
+}
+df_mean$troph <- factor(df_mean$troph, levels = c("generalist", 
+                                              "predator", 
+                                              "herbivore", 
+                                              "decomposer", 
+                                              "plant", 
+                                              "birds", 
+                                              "bats", 
+                                              "summary", 
+                                              "trait"))
+##############################################################
+# bymedian <- with(df_mean, reorder(troph, -Rsquared, median))
+# boxplot(troph ~ bymedian, data = df_mean)
+# 
+# df_R2 <- df_mean[-which(is.na(df_mean$Rsquared)),c("resp", "Rsquared", "troph")]
+# 
+# bymed <- with(df_R2, reorder(troph, -Rsquared, median))
+# #boxplot(troph ~ bymed, data = df_R2)
+# 
+# 
+# df_R2$troph <- factor(df_R2$troph, levels = levels(bymed))
+# ggplot(df_R2, aes(troph,Rsquared))+
+#   geom_boxplot(aes(fill = troph), lwd = 0.3)
+
+# 
+# # df_R2 <- df_R2[,c(1: (ncol(df_R2)-1))]
+# # colnames(df_R2) <- c("resp", "Rsquared", "troph", "meanR2")
+# 
+# R2_aggregate <- aggregate(df_R2, by = list(df_R2$troph), FUN = median)
+# R2_sort <- R2_aggregate[with(R2_aggregate, order(R2_aggregate$Rsquared, decreasing = T)),]
+# R2_df <- df_mean
+# R2_df$troph[] <- lapply(R2_df$troph, as.character)
+# 
+
+#plot mean by troph sorted by median
+# variations <- c("Rsquared", "RMSE_norm_by_mean", "RMSE_norm_by_sd")
+# for(i in variations){
+#   df_tmp <- df_mean[-which(is.na(df_mean[,which(colnames(df_mean) == i)])),c("resp", i, "troph")]
+#   #assign("x", 5)
+#   bymedian <- with(df_tmp, reorder(troph, -Rsquared, median)) #####################################################hier müsste i rein, aber als variable, nicht als character! 
+# }
+
+
+pdf(file = paste0(outpath, "boxplot_Rsquared_mean.pdf"), width = 12, height = 12)
+  for (i in seq(variations)){
+    df_mean_tmp <- df_mean[which(df_mean$resp %in% variations[[i]]),]
+    df_R2 <- df_mean_tmp[,c("resp", "Rsquared", "troph")]
+    # df_R2 <- df_mean_tmp[-which(is.na(df_mean_tmp$Rsquared)),c("resp", "Rsquared", "troph")]
+    bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median))
+    df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
+    plot_trop(df = df_R2, smmry = "troph", var = "Rsquared", 
+              resp_title = paste0("mean_Rsquared_", names(variations)[i]))
+  }
+dev.off()
+
+
+pdf(file = paste0(outpath, "boxplot_mean_by_troph.pdf"), width = 12, height = 12)
+##R2
+df_R2 <- df_mean[-which(is.na(df_mean$Rsquared)),c("resp", "Rsquared", "troph")]
+bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median))
+df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
+plot_trop(df = df_R2, smmry = "troph", var = "Rsquared", 
+          resp_title = "mean_troph_grps")
+
+#RMSE sort by mean
+#df_RMSE_mean <- df_mean[-which(is.na(df_mean$RMSE_norm_by_mean)),c("resp", "RMSE_norm_by_mean", "troph")]
+df_RMSE_mean <- df_mean[,c("resp", "RMSE_norm_by_mean", "troph")]
+df_RMSE_mean <- df_RMSE_mean[complete.cases(df_RMSE_mean),]
+bymed_RMSE_mean <- with(df_RMSE_mean, reorder(troph, -RMSE_norm_by_mean, median))
+df_RMSE_mean$troph <- factor(df_RMSE_mean$troph, levels = levels(bymed_RMSE_mean))
+plot_trop(df = df_RMSE_mean, smmry = "troph", var = "RMSE_norm_by_mean", 
+          resp_title = "mean_troph_grps")
+
+#RMSE sort by sd
+df_RMSE_sd <- df_mean[,c("resp", "RMSE_norm_by_sd", "troph")]
+df_RMSE_sd <- df_RMSE_sd[complete.cases(df_RMSE_sd),]
+bymed_RMSE_sd <- with(df_RMSE_sd, reorder(troph, -RMSE_norm_by_sd, median))
+df_RMSE_sd$troph <- factor(df_RMSE_sd$troph, levels = levels(bymed_RMSE_sd))
+plot_trop(df = df_RMSE_sd, smmry = "troph", var = "RMSE_norm_by_sd", 
+          resp_title = "sd_troph_grps")
+dev.off()
 

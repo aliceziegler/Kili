@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
+sub <- "jul18_50m/2018-08-05_ffs_pls_cv_noForest_noslpasp/"
 datpath <- paste0("../data/")
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)

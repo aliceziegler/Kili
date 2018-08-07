@@ -20,7 +20,7 @@ library(dplyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-07-18_ffs_pls_cv_onlyForest/"
+sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
