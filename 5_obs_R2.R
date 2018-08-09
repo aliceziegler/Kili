@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-05_ffs_pls_cv_noForest_noslpasp/"
+sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
 datpath <- paste0("../data/")
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -40,8 +40,6 @@ if (all_plts == F){
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
 }
-
-
 
 
 df_resp <- tbl[,which(colnames(tbl) %in% stats_comb$resp)] 

@@ -17,7 +17,7 @@ library(grid)
 library(compositions)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-05_ffs_pls_cv_noForest_noslpasp/"
+sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
 # sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -134,7 +134,7 @@ varimp_mat <- do.call("cbind", varimp_tmp_lst[])
 #
 ### funktion rasterplot
 lvlplt <- function(mat, name, font_sz = 0.35, #filename, 
-                   wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(0,1,0.1)){
+                   wdth = 10, hght = 7, lbl_x, lbl_y, rnge = seq(0,1,0.1), main = ""){
   xdim <- dim(mat)[2]
   ydim <- dim(mat)[1]
   rst <- raster(mat, xmn = 0.5, xmx = (xdim+0.5), ymn = 0.5, ymx = ydim+0.5)
@@ -143,6 +143,7 @@ lvlplt <- function(mat, name, font_sz = 0.35, #filename,
                                y = list(at = c(ydim:1), cex = font_sz, labels = lbl_y)), 
             margin = FALSE, 
             #main = list(name,side=1,line=0.5), 
+            main = main, 
             col.regions = clr(101), 
             at = rnge))
   # dev.off()
@@ -199,7 +200,8 @@ for (i in seq(variations)){
   
   agg_troph_lst <- as.list(agg_troph[, -which(colnames(agg_troph) == "troph_grp")])
   agg_troph_mat <- do.call("cbind", agg_troph_lst[])
-  lvlplt(mat = agg_troph_mat, lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp, rnge = seq(0,0.1,0.001))
+  lvlplt(mat = agg_troph_mat, lbl_x = colnames(agg_troph_mat), lbl_y = agg_troph$troph_grp, 
+         rnge = seq(0,0.1,0.001), main = paste0(names(variations)[i]))
 }
 dev.off()
 
@@ -216,7 +218,7 @@ for (i in seq(variations)){#####################################################
   
   agg_pred_lst <- as.list(agg_pred[, -which(colnames(agg_pred) == "pred_grp")])
   agg_pred_mat <- do.call("cbind", agg_pred_lst[])
-  lvlplt(mat = agg_pred_mat, font_sz = 0.5, lbl_x = colnames(agg_pred_mat), lbl_y = agg_pred$pred_grp)
+  lvlplt(mat = agg_pred_mat, main = names(variations)[i], font_sz = 0.5, lbl_x = colnames(agg_pred_mat), lbl_y = agg_pred$pred_grp)
   
   ###group by trophic levels and predictors
   agg_tbl <- agg_pred
@@ -237,7 +239,7 @@ for (i in seq(variations)){#####################################################
   agg_vi_lst <- as.list(agg_all_df[, -which(colnames(agg_all_df) == "troph")])
   agg_vi_mat <- do.call("cbind", agg_vi_lst[])
   agg_vi_mat <- agg_vi_mat/max(agg_vi_mat, na.rm = T)
-  lvlplt(mat = agg_vi_mat, font_sz = 0.5, lbl_x = colnames(agg_vi_mat), lbl_y = as.character(agg_all_df$troph), rnge = seq(0, 1, 0.1))
+  lvlplt(mat = agg_vi_mat, main = names(variations)[i], font_sz = 0.5, lbl_x = colnames(agg_vi_mat), lbl_y = as.character(agg_all_df$troph), rnge = seq(0, 1, 0.1))
 }
 dev.off()
 

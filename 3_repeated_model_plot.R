@@ -13,7 +13,7 @@ library(RColorBrewer)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
+sub <- "jul18_50m/2018-08-02_ffs_pls_cv_onlyForest_noslpasp/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
@@ -101,11 +101,11 @@ plot_trop <- function(df, var, names, resp_title, smmry = "resp", path = outpath
   print(p)
 }
 
-#testing
-alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
-alpha_nm_SR <- alpha_nm[-grep("resid", alpha_nm)]
-tmp_stats <- stats[which(stats$resp %in% alpha_nm_SR),]
-plot_trop(df = tmp_stats, var = "Rsquared", resp_title = "alpha_test")
+# #testing
+# alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
+# alpha_nm_SR <- alpha_nm[-grep("resid", alpha_nm)]
+# tmp_stats <- stats[which(stats$resp %in% alpha_nm_SR),]
+# plot_trop(df = tmp_stats, var = "Rsquared", resp_title = "alpha_test")
 
 
 trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
@@ -227,7 +227,7 @@ pdf(file = paste0(outpath, "boxplot_Rsquared_mean.pdf"), width = 12, height = 12
     df_mean_tmp <- df_mean[which(df_mean$resp %in% variations[[i]]),]
     df_R2 <- df_mean_tmp[,c("resp", "Rsquared", "troph")]
     # df_R2 <- df_mean_tmp[-which(is.na(df_mean_tmp$Rsquared)),c("resp", "Rsquared", "troph")]
-    bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median))
+    bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median, na.rm = T))
     df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
     plot_trop(df = df_R2, smmry = "troph", var = "Rsquared", 
               resp_title = paste0("mean_Rsquared_", names(variations)[i]))
@@ -237,7 +237,8 @@ dev.off()
 
 
 
-
+###alle in einen plot packen, aber trotzdem nur zb predator_jac1 werden für eine Box betrachtet. 
+###########################################################################################2do: farben sind falsch zugeordnet aber passen in gruppen, legende ist zu lang..sollte nur trophische level haben
 df_mean_all <- data.frame()
 for (i in seq(variations)){
   df_mean_tmp <- df_mean[which(df_mean$resp %in% variations[[i]]),]
@@ -246,71 +247,29 @@ for (i in seq(variations)){
   df_mean_all <- rbind(df_mean_all, df_R2)}
 
 # df_R2 <- df_mean_tmp[-which(is.na(df_mean_tmp$Rsquared)),c("resp", "Rsquared", "troph")]
-bymed_R2 <- with(df_mean_all, reorder(troph_unq, -Rsquared, median))
-df_mean_all$troph_unq <- factor(df_mean_all$troph_unq, levels = levels(bymed_R2))
+bymed_R2_all <- with(df_mean_all, reorder(troph_unq, -Rsquared, median, na.rm = T)) ####wie kann es da überhaupt NA geben? Gibt es bei Pflanzen!
+df_mean_all$troph_unq <- factor(df_mean_all$troph_unq, levels = levels(bymed_R2_all))
 
 #df_mean_col_all <- merge(df_mean_all, df_col, by = "troph")
 troph_unq_col_rw <- merge(df_mean_all, df_col, by = "troph")
 troph_unq_col <- unique(troph_unq_col_rw[,c("troph", "troph_unq", "col")])
 
-myColors_all <- troph_unq_col$col
+troph_unq_col_srt <- with(troph_unq_col, troph_unq_col[order(troph_unq),])
+
+myColors_all <- troph_unq_col_srt$col
 names(myColors_all) <- levels(troph_unq_col$troph_unq)
 legend_order_all <- levels(df_mean_all$troph_unq)
 fillscale_all <- scale_fill_manual(name = "troph_col_all",values = myColors_all, breaks = legend_order_all)
 
+###########################################################################################2do: farben sind falsch zugeordnet aber passen in gruppen, legende ist zu lang..sollte nur trophische level haben
 plt <- ggplot(aes_string(x = "troph_unq", y = "Rsquared", fill = "troph_col_all"), data = df_mean_all) +
   geom_boxplot(aes(fill = troph_unq), lwd = 0.3) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
   xlab(paste0("mean_Rsquared_", names(variations)[i])) +
   ylab("Rsquared")+
-  guides(fill=guide_legend(title="trophic level"))+
+  #guides(fill=guide_legend(title="trophic level"))+
+  guides(fill=F)+
   fillscale_all
 pdf(file = paste0(outpath, "boxplot_Rsquared_mean_all.pdf"), width = 12, height = 12)
 print(plt)
 dev.off()
-
-# plot_trop_all <- function(df, var, names, resp_title, smmry = "resp", path = outpath, comm,
-#                       fillscale = fillscale_std){
-#   #df$resp = reorder(df$resp, df[[var]], median)
-#   p <- ggplot(aes_string(x = smmry, y = var, fill = "troph_col"), data = df) +
-#     geom_boxplot(aes(fill = troph_unq), lwd = 0.3) +
-#     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
-#     xlab(resp_title) +
-#     ylab(var)+
-#     guides(fill=guide_legend(title="trophic level"))+
-#     fillscale
-#   print(p)
-# }
-# 
-# 
-# pdf(file = paste0(outpath, "boxplot_Rsquared_mean_all.pdf"), width = 12, height = 12)
-# plot_trop_all(df = df_mean_all, smmry = "troph_unq", var = "Rsquared",
-#           resp_title = paste0("mean_Rsquared_", names(variations)[i]), fillscale = fillscale_all)
-# dev.off()
-
-# pdf(file = paste0(outpath, "boxplot_mean_by_troph.pdf"), width = 12, height = 12)
-# ##R2
-# df_R2 <- df_mean[-which(is.na(df_mean$Rsquared)),c("resp", "Rsquared", "troph")]
-# bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median))
-# df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
-# plot_trop(df = df_R2, smmry = "troph", var = "Rsquared", 
-#           resp_title = "mean_troph_grps")
-# 
-# #RMSE sort by mean
-# #df_RMSE_mean <- df_mean[-which(is.na(df_mean$RMSE_norm_by_mean)),c("resp", "RMSE_norm_by_mean", "troph")]
-# df_RMSE_mean <- df_mean[,c("resp", "RMSE_norm_by_mean", "troph")]
-# df_RMSE_mean <- df_RMSE_mean[complete.cases(df_RMSE_mean),]
-# bymed_RMSE_mean <- with(df_RMSE_mean, reorder(troph, -RMSE_norm_by_mean, median))
-# df_RMSE_mean$troph <- factor(df_RMSE_mean$troph, levels = levels(bymed_RMSE_mean))
-# plot_trop(df = df_RMSE_mean, smmry = "troph", var = "RMSE_norm_by_mean", 
-#           resp_title = "mean_troph_grps")
-# 
-# #RMSE sort by sd
-# df_RMSE_sd <- df_mean[,c("resp", "RMSE_norm_by_sd", "troph")]
-# df_RMSE_sd <- df_RMSE_sd[complete.cases(df_RMSE_sd),]
-# bymed_RMSE_sd <- with(df_RMSE_sd, reorder(troph, -RMSE_norm_by_sd, median))
-# df_RMSE_sd$troph <- factor(df_RMSE_sd$troph, levels = levels(bymed_RMSE_sd))
-# plot_trop(df = df_RMSE_sd, smmry = "troph", var = "RMSE_norm_by_sd", 
-#           resp_title = "sd_troph_grps")
-# dev.off()
-
