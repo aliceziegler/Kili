@@ -206,7 +206,7 @@ for (i in seq(variations)){
 dev.off()
 
 
-###group by predictorsand then by predictors and trophic levels
+###group by predictors (grp) and then by predictors and trophic levels
 
 varimp_pred_grp <- merge(varimp_df, pred_grp, by = "pred")
 pdf(file = paste0(outpath, "heat_varimp_grp_pred_AND_grp.pdf"), width = 10, height = 7)

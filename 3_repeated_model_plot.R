@@ -87,25 +87,25 @@ names(myColors) <- levels(stats$troph)
 legend_order <- levels(stats$troph)
 fillscale_std <- scale_fill_manual(name = "troph_col",values = myColors, breaks = legend_order)
 
+give.n <- function(l){
+  return(c(y = 0, label = length(l))) 
+  # experiment with the multiplier to find the perfect position
+}
 
 plot_trop <- function(df, var, names, resp_title, smmry = "resp", path = outpath, comm, 
                       fillscale = fillscale_std){
   #df$resp = reorder(df$resp, df[[var]], median)
-  p <- ggplot(aes_string(x = smmry, y = var, fill = "troph_col"), data = df) +
+  p <- ggplot(aes_string(x = smmry, y = var), data = df) +
     geom_boxplot(aes(fill = troph), lwd = 0.3) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
     xlab(resp_title) +
     ylab(var)+
+    stat_summary(fun.data = give.n, geom = "text", fun.y = median)+
     guides(fill=guide_legend(title="trophic level"))+
     fillscale
   print(p)
 }
 
-# #testing
-# alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
-# alpha_nm_SR <- alpha_nm[-grep("resid", alpha_nm)]
-# tmp_stats <- stats[which(stats$resp %in% alpha_nm_SR),]
-# plot_trop(df = tmp_stats, var = "Rsquared", resp_title = "alpha_test")
 
 
 trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
@@ -222,6 +222,34 @@ df_mean$troph <- factor(df_mean$troph, levels = c("generalist",
 # }
 
 
+
+# #testing
+# plot_trop_mean <- function(df, var, names, resp_title, smmry = "resp", path = outpath, 
+#                            fillscale = fillscale_std){
+#   #df$resp = reorder(df$resp, df[[var]], median)
+#   p <- ggplot(aes_string(x = smmry, y = var), data = df) +
+#     geom_boxplot(aes(fill = troph), lwd = 0.3) +
+#     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
+#     xlab(resp_title) +
+#     ylab(var)+
+#     guides(fill=guide_legend(title="trophic level")) +
+#     stat_summary(fun.data = give.n, geom = "text", fun.y = median)+
+#     fillscale
+#   print(p)
+# }
+# 
+# 
+# 
+# df_mean_tmp <- df_mean[which(df_mean$resp %in% variations[[2]]),]
+# df_R2 <- df_mean_tmp[,c("resp", "Rsquared", "troph")]
+# # df_R2 <- df_mean_tmp[-which(is.na(df_mean_tmp$Rsquared)),c("resp", "Rsquared", "troph")]
+# bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median, na.rm = T))
+# df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
+# plot_trop(df = df_R2, smmry = "troph", var = "Rsquared",
+#           resp_title = paste0("mean_Rsquared_", names(variations)[2]))
+
+
+
 pdf(file = paste0(outpath, "boxplot_Rsquared_mean.pdf"), width = 12, height = 12)
   for (i in seq(variations)){
     df_mean_tmp <- df_mean[which(df_mean$resp %in% variations[[i]]),]
@@ -229,7 +257,7 @@ pdf(file = paste0(outpath, "boxplot_Rsquared_mean.pdf"), width = 12, height = 12
     # df_R2 <- df_mean_tmp[-which(is.na(df_mean_tmp$Rsquared)),c("resp", "Rsquared", "troph")]
     bymed_R2 <- with(df_R2, reorder(troph, -Rsquared, median, na.rm = T))
     df_R2$troph <- factor(df_R2$troph, levels = levels(bymed_R2))
-    plot_trop(df = df_R2, smmry = "troph", var = "Rsquared", 
+    plot_trop_mean(df = df_R2, smmry = "troph", var = "Rsquared", 
               resp_title = paste0("mean_Rsquared_", names(variations)[i]))
   }
 dev.off()
