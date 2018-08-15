@@ -225,27 +225,19 @@ stats <- merge(stats, stats_smry)
 ###merge stats with N plots and mean N of species per plot number
 stats <- merge(stats, obs_smmry, by.x = "resp", by.y = 0)
 
+stats$RMSE_norm_by_sd <- NA
+for (k in unique(stats$resp)){
+  tmp <- stats[which(stats$resp == k),]
+  tmp_sd <- sd(mrg_tbl[,which(colnames(mrg_tbl) == k)], na.rm = T)
+  stats$RMSE_norm_by_sd[which(stats$resp == k)] <- stats$RMSE[which(stats$resp == k)]/tmp_sd
+}
+
 stats$RMSE_norm_by_mean <- NA
 for (j in unique(stats$resp)){
   tmp <- stats[which(stats$resp == j),]
   tmp_mean <- mean(mrg_tbl[,which(colnames(mrg_tbl) == j)], na.rm = T)
-  stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$meanN_perplot[which(stats$resp == j)]/tmp_mean
+  stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
 }
-
-
-# stats$RMSE_norm_by_sd <- NA
-# for (k in unique(stats$resp)){
-#   tmp <- stats[which(stats$resp == k),]
-# 
-#   stats$RMSE_norm_by_sd[which(stats$resp == k)] <- stats$RMSE[which(stats$resp == k)]/stats$sdRMSE[which(stats$resp == k)]
-# }
-# 
-# stats$RMSE_norm_by_mean <- NA
-# for (j in unique(stats$resp)){
-#   tmp <- stats[which(stats$resp == j),]
-#   tmp_mean <- mean(mrg_tbl[,which(colnames(mrg_tbl) == j)], na.rm = T)
-#   stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
-# }
 
 save(stats, file = paste0(inpath, "stats.RData"))
 #stats <- get(load(paste0(inpath, "stats.RData")))
