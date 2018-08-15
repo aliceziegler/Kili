@@ -31,7 +31,7 @@ stats <- readRDS(paste0(outpath, "stats_troph.RDS"))
 troph_grp <- unique(data.frame(stats$resp, stats$troph))
 colnames(troph_grp) <- c("resp", "troph")
 pred_grp <- readRDS(file = paste0(inpath, "../pred_grp.RDS"))####################woanders hinlegen und woanders hernehmen.
-
+pred_grp_lay <- 
 #####plotting properties
 clr <- colorRampPalette(brewer.pal(9, "YlOrRd"))
 

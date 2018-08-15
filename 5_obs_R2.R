@@ -30,7 +30,13 @@ stats_comb <- unique(stats_comb_all)
 
 ####subset of relevant plots
 all_plts <- F
-frst <- F
+if (all_plts == F){
+  if(length(grep("_only", sub))){
+    frst <- T
+  }else{
+    frst <- F
+  }
+}
 
 if (all_plts == F){
   if (frst == T){
@@ -50,6 +56,7 @@ colnames(obs_nmbr) <- paste0("nmbr_obs_of_", n_max)
 obs_nmbr$resp <- rownames(obs_nmbr)
 
 stats_Na <- merge(stats_comb, obs_nmbr, by = "resp")
+summary(lm(stats_Na$meanR2 ~ stats_Na$nmbr_obs_of_28))
 
 pdf(file = paste0(outpath, "R2_gg_nmb_obs.pdf"), width = 10, height = 7)
 plot(stats_Na$meanR2, stats_Na[,ncol(stats_Na)])

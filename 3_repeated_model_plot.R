@@ -26,6 +26,7 @@ if (file.exists(outpath)==F){
 ########################################################################################
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 stats <- get(load(paste0(inpath, "stats.RData")))
+obs_smmry <-readRDS(file = paste0(inpath, "obs_smmry.rds"))
 #colnames(stats)[which(colnames(stats) == "Rsquared")] <- "R2"
 R2_df <- unique(data.frame(stats$resp, stats$meanR2))
 R2_df <- R2_df[order(R2_df$stats.meanR2, decreasing = T),]
@@ -76,6 +77,10 @@ stats$troph <- factor(stats$troph, levels = c("generalist",
                                               "trait"))
 stats <- stats[with(stats, order(troph, resp)),] ####sortierung nach alphabet resp ist nicht sooo optimal, weil resids lfter zusammenstehen und nicht abwechselnd reisid und das entsprechende SR- eventuell "resid" hinten an namen dranschreiben
 stats$resp <- factor(stats$resp, levels = unique(stats$resp))
+
+###merge stats with N plots and mean N of species per plot number
+test <- merge(stats, obs_smmry, by.x = "resp", by.y = 0)
+
 
 saveRDS(stats, file = paste0(outpath, "stats_troph.RDS"))
 

@@ -15,9 +15,9 @@ library(foreach)
 library(parallel)
 library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
-setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-#setwd("/media/memory02/users/aziegler/src")
-sub <- "jul18_50m/"
+#setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
+setwd("/media/memory02/users/aziegler/src")
+sub <- "aug18/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
 
@@ -32,22 +32,11 @@ outpath <- paste0("../data/", sub)
 tbl_nm <- "dat_ldr_mrg.RData"
 ###choose relevant columns
 tbl_rw <- get(load(paste0(inpath, tbl_nm)))
-# auswahl mit slope und aspect variablen aber ohne höhe
-# tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-#               which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "BE_ELEV_ASPECT"), 
-#               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
-#               which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
-#               which(colnames(tbl_rw) %in% "dtm_aspect_mean") : which(colnames(tbl_rw) %in% "dtm_aspect_unweighted_mean"), 
-#               which(colnames(tbl_rw) %in% "dtm_elevation_sd") : which(colnames(tbl_rw) %in% "dtm_surface_ratio"), 
-#               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
-#               which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
-#               which(colnames(tbl_rw) %in% "vegetation_coverage_01m") : which(colnames(tbl_rw) %in% "vegetation_coverage_10m"), 
-#               which(colnames(tbl_rw) %in% "mdn_rtrn") : which(colnames(tbl_rw) %in% "sd_rtrn_1"),
-#               which(colnames(tbl_rw) %in% "gap_frac"))
 
 # ohne slope und aspect und ohne höhe
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "AGB"), 
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residrosids_jac_NMDS2"), 
+              which(colnames(tbl_rw) %in% "plotUnq") : which(colnames(tbl_rw) %in% "AGB"), 
               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
               which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
@@ -64,7 +53,7 @@ tbl <- tbl_rw[,tbl_cols]
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
-                             grep("abundance", names(tbl)))]
+                             grep("residrosids_jac_NMDS2", names(tbl)))]
 nm_pred <- colnames(tbl)[seq(grep("AGB", names(tbl)),
                              grep("gap_frac", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
@@ -81,8 +70,9 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_noForest_noslpasp"
+comm <- "_cv_noForest"
 ind_nums <- sort(unique(tbl$selID))
+ind_nums <- ind_nums[ind_nums>0]
 all_plts <- F
 frst <- F # set true if model should only be done for forested plots
 
@@ -151,7 +141,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 28
+cl <- 14
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
