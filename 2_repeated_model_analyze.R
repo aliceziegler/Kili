@@ -20,7 +20,7 @@ library(dplyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-02_ffs_pls_cv_onlyForest_noslpasp/"
+sub <- "aug18/2018-08-15_ffs_pls_cv_onlyForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -213,12 +213,12 @@ saveRDS(varimp_lst, file = paste0(inpath, "varimp_lst.rds"))
 
 #####other statistical values (not from within postResample)
 stats_smry <- as.data.frame(ddply(stats,~resp,summarise,
-                             meanR2 = mean(Rsquared),
-                             medianR2 = median(Rsquared),
-                             sdR2 = sd(Rsquared), 
-                             meanRMSE = mean(RMSE),
-                             medianRMSE = median(RMSE),
-                             sdRMSE = sd(RMSE)))
+                             meanR2 = mean(Rsquared, na.rm = T),
+                             medianR2 = median(Rsquared, na.rm = T),
+                             sdR2 = sd(Rsquared, na.rm = T), 
+                             meanRMSE = mean(RMSE, na.rm = T),
+                             medianRMSE = median(RMSE, na.rm = T),
+                             sdRMSE = sd(RMSE, na.rm = T)))
 
 stats <- merge(stats, stats_smry)
 

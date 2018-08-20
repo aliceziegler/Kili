@@ -13,7 +13,7 @@ library(RColorBrewer)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-02_ffs_pls_cv_onlyForest_noslpasp/"
+sub <- "aug18/2018-08-15_ffs_pls_cv_noForest/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
@@ -88,31 +88,33 @@ myColors <- c("yellow2", "red2", "darkgreen", "sienna2", "green2", "royalblue2",
 names(myColors) <- levels(stats$troph)
 legend_order <- levels(stats$troph)
 fillscale_std <- scale_fill_manual(name = "troph_col",values = myColors, breaks = legend_order)
-
+#colscale_std <- scale_color_manual(name = "troph_col", values = myColors)
 give.n <- function(l){
   return(c(y = 0, label = length(l))) 
   # experiment with the multiplier to find the perfect position
 }
 
 plot_trop <- function(df, var, names, resp_title, smmry = "resp", path = outpath, comm, 
-                      fillscale = fillscale_std){
+                      fillscale = fillscale_std){ #, colscale = colscale_std){
   #df$resp = reorder(df$resp, df[[var]], median)
   p <- ggplot(aes_string(x = smmry, y = var), data = df) +
     geom_boxplot(aes(fill = troph), lwd = 0.3) +
+    #geom_boxplot(aes(fill = troph, color = troph), lwd = 0.3) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) +
     xlab(resp_title) +
     ylab(var)+
     stat_summary(fun.data = give.n, geom = "text", fun.y = median)+
     guides(fill=guide_legend(title="trophic level"))+
-    fillscale
+    fillscale#+
+    #colscale
   print(p)
 }
 
 
 
-trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
+#trait_nm <- c("abundance", "body_mass", "richness", unique(as.character(stats$resp[grep("index", stats$resp)])))
 alpha_nm <- unique(stats$resp[-grep("NMDS", stats$resp)])
-alpha_nm <- alpha_nm[-which(alpha_nm %in% trait_nm)]
+#alpha_nm <- alpha_nm[-which(alpha_nm %in% trait_nm)]
 beta_nm <- unique(stats$resp[grepl("NMDS", stats$resp)])
 
 ###divide alpha and beta by residuals and SR
@@ -142,8 +144,8 @@ beta_nm_resid_jtu2 <- beta_nm_resid[grepl("jtu", beta_nm_resid)&grepl("NMDS2", b
 beta_nm_resid_jne2 <- beta_nm_resid[grepl("jne", beta_nm_resid)&grepl("NMDS2", beta_nm_SR)]
 
 ###responses you wish the plots for 
-#variations <- list (trait = trait_nm)
-variations <- list(trait = trait_nm, alpha_SR = alpha_nm_SR, alpha_resid = alpha_nm_resid, 
+#variations <- list (trait = trait_nm, ...)
+variations <- list(alpha_SR = alpha_nm_SR, alpha_resid = alpha_nm_resid, 
                    beta_SR_jac1 = beta_nm_SR_jac1, beta_SR_jtu1 = beta_nm_SR_jtu1, 
                    beta_SR_jne1 = beta_nm_SR_jne1, beta_resid_jac1 = beta_nm_resid_jac1, 
                    beta_resid_jtu1 = beta_nm_resid_jtu1, beta_resid_jne1 = beta_nm_resid_jne1, 
