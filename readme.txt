@@ -1,0 +1,1 @@
+Before starting with 1_model_run.R the table must be created with the LiDARtools_wrap.R script from within the LiDARtools package. 
