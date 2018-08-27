@@ -17,7 +17,7 @@ library(plyr)
 library(Rsenal)
 #setwd for folder with THIS script (only possible within Rstudio)
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "mai18_50m_resid_nrmlz_newDB/"
+sub <- "aug18/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
 
@@ -32,25 +32,29 @@ outpath <- paste0("../data/", sub)
 tbl_nm <- "dat_ldr_mrg.RData"
 ###choose relevant columns
 tbl_rw <- get(load(paste0(inpath, tbl_nm)))
+# ohne slope und aspect und ohne h?he
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "BE_ELEV_ASPECT"), 
-              which(colnames(tbl_rw) %in% "BE_ELEV_SLOPE") : which(colnames(tbl_rw) %in% "TCH"), 
-              which(colnames(tbl_rw) %in% "chm_height_max") : which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
-              which(colnames(tbl_rw) %in% "dtm_aspect_mean") : which(colnames(tbl_rw) %in% "dtm_aspect_unweighted_mean"), 
-              which(colnames(tbl_rw) %in% "dtm_elevation_sd") : which(colnames(tbl_rw) %in% "dtm_surface_ratio"), 
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residrosids_jac_NMDS2"), 
+              which(colnames(tbl_rw) %in% "sum_predator_N5"): which(colnames(tbl_rw) %in% "sum_bats_N1"), 
+              which(colnames(tbl_rw) %in% "plotUnq"), 
+              which(colnames(tbl_rw) %in% "AGB"), 
+              which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
+              which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
               which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
               which(colnames(tbl_rw) %in% "vegetation_coverage_01m") : which(colnames(tbl_rw) %in% "vegetation_coverage_10m"), 
-              which(colnames(tbl_rw) %in% "mdn_rtrn") : which(colnames(tbl_rw) %in% "LAI.y"),
+              which(colnames(tbl_rw) %in% "mdn_rtrn"), 
+              which(colnames(tbl_rw) %in% "sd_rtrn_1"),
               which(colnames(tbl_rw) %in% "gap_frac"))
 ###
 # tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelÃ¶st werden 
 ###
 tbl <- tbl_rw[,tbl_cols]
+#saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
-                             grep("abundance", names(tbl)))]
+                             grep("sum_bats_N1", names(tbl)))]
 nm_pred <- colnames(tbl)[seq(grep("AGB", names(tbl)),
                              grep("gap_frac", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
@@ -69,7 +73,9 @@ rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 #comment for explenatory filename
 comm <- "_ffs_indxINOUT"
 ind_num <- max(tbl$selID)
-frst <- F # set true if model should onlybe done for forested plots
+all_plts <- F
+frst <- F # set true if model should only be done for forested plots
+
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
 if (file.exists(modDir)==F){
@@ -79,14 +85,29 @@ if (file.exists(modDir)==F){
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
 ########################################################################################
-#choose which plots are beeing used
-if (frst == T){
-  frst_cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
-  tbl <- tbl[which(tbl$cat %in% frst_cat),]
+#choose which plots are beeing used and delete responses, that have less that have values for less 15 plots #########verbessern: relativ gestalten und dann für alle nicht nur forest
+if (all_plts == F){
+  if (frst == T){
+    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
+  }else if (frst == F){
+    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+  }
+  tbl <- tbl[which(tbl$cat %in% cat),]
+  #tbl <- tbl[which(tbl$cat %in% cat),which(colSums(is.na(tbl)) < 15)]
 }
 
+
 # choose which columns are beeing used for training, testing, val
-df_pred <- tbl[, c(which(colnames(tbl) %in% nm_pred))]
+df_pred_all <- tbl[, c(which(colnames(tbl) %in% nm_pred))]
+## remove all variables where 90% of the entries are the same 
+## (mostly 0 for lidar variables in heights where most plots dont have any points)
+df_pred <- df_pred_all
+for (i in colnames(df_pred_all)){
+  frq <- table(df_pred_all[i])
+  if (max(frq) > floor(nrow(df_pred_all) * 0.5)){
+    df_pred <- df_pred[, !(colnames(df_pred) %in% i)]
+  }
+}
 df_resp <- tbl[, c(which(colnames(tbl) %in% nm_resp))]
 df_resp <- as.data.frame(sapply(df_resp, function(x) as.numeric(x)))
 df_resp <- cbind(df_resp[,grep("resid", colnames(df_resp))], df_resp[,-grep("resid", colnames(df_resp))])
@@ -124,9 +145,9 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 
 pdf(paste0(outpath, "plots_tunelength_R2.pdf"))
 
-for (i in c("residSRmammals", "residSRsnails", "SRsnails", "SRferns", "SRmammals", 
-            "mammals_jtu_NMDS1", "mammals_jtu_NMDS2", "mammals_jne_NMDS1", "mammals_jne_NMDS2", 
-            "mammals_jac_NMDS1", "mammals_jac_NMDS2")){
+for (i in c("residSRbirds", "residSRsnails", "SRsnails", "SRferns", "SRbirds", 
+            "birds_jtu_NMDS1", "birds_jtu_NMDS2", "birds_jne_NMDS1", "birds_jne_NMDS2", 
+            "birds_jac_NMDS1", "birds_jac_NMDS2", "sum_predator_N5")){
   
   
   #                     "tuneLength", "modDir", "type", "i"))

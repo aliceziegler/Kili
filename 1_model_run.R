@@ -15,8 +15,8 @@ library(foreach)
 library(parallel)
 library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
-#setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-setwd("/media/memory02/users/aziegler/src")
+setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
+#setwd("/media/memory02/users/aziegler/src")
 sub <- "aug18/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
@@ -33,11 +33,17 @@ tbl_nm <- "dat_ldr_mrg.RData"
 ###choose relevant columns
 tbl_rw <- get(load(paste0(inpath, tbl_nm)))
 
-# ohne slope und aspect und ohne höhe
+
+
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residrosids_jac_NMDS2"), 
-              which(colnames(tbl_rw) %in% "plotUnq") : which(colnames(tbl_rw) %in% "AGB"), 
-              which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "LAI"), 
+              which(colnames(tbl_rw) %in% "dstrb"),
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residrosids_jac_NMDS2"),
+              which(colnames(tbl_rw) %in% "sum_predator_N5"): which(colnames(tbl_rw) %in% "sum_bats_N1"), 
+              which(colnames(tbl_rw) %in% "residsum_predator_N5"): which(colnames(tbl_rw) %in% "residsum_bats_N1"),
+              which(colnames(tbl_rw) %in% "plotUnq"), 
+              which(colnames(tbl_rw) %in% "AGB"), 
+              which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "BE_PR_55"), 
+              which(colnames(tbl_rw) %in% "BE_PR_REG") : which(colnames(tbl_rw) %in% "LAI"), 
               which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
               which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
               which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
@@ -52,10 +58,17 @@ tbl <- tbl_rw[,tbl_cols]
 #saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
-nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
-                             grep("residrosids_jac_NMDS2", names(tbl)))]
-nm_pred <- colnames(tbl)[seq(grep("AGB", names(tbl)),
-                             grep("gap_frac", names(tbl)))]
+nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
+                           seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
+                           seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
+                           seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
+                           seq(grep("^sum_predator_N5", names(tbl)), grep("residsum_bats_N1", names(tbl))))]
+# nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
+#                              grep("sum_bats_N1", names(tbl)))]
+nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
+                             grep("gap_frac", names(tbl))), 
+                         grep("elevation", names(tbl)), 
+                         grep("dstrb", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 ###selectors
 tbl$selID <- as.integer(substr(tbl$plotID, 4, 4))
@@ -141,7 +154,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 14
+cl <- 8
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -248,7 +261,7 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
       mod <- rfe(pred, resp, method = method,
                  rfeControl = rfe_cntrl, tuneLength = tuneLength)
     }else if (type == "ffs"){
-      mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),###
+      mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),###bedeutet, dass tune length = 1 gesezt wird!?
           trControl = trainControl(index = cvIndex, 
                                    allowParallel = F)) ##########PLATZHALTER###########))
     }

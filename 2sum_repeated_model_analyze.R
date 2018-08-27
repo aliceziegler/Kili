@@ -20,7 +20,7 @@ library(dplyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-21_ffs_pls_sum_onlyForest/"
+sub <- "aug18/2018-08-23_ffs_pls_cv_onlyForest_troph_sum/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -32,7 +32,7 @@ if (file.exists(outpath)==F){
 nm_pred <- get(load(file = paste0(inpath, "nm_pred.RData")))
 nm_resp <- get(load(file = paste0(inpath, "nm_resp.RData")))
 outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
-mrg_tbl <- get(load(paste0(inpath, "../dat_ldr_mrg_sum.RData")))
+mrg_tbl <- get(load(paste0(inpath, "../dat_ldr_mrg.RData")))
 nm_resp <- gsub("resid_", "resid", nm_resp)
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
@@ -112,7 +112,7 @@ smmry_obs <- lapply(models, function(i){
   # resp <- gsub("kipps", "kipps_", resp)
   # resp <- gsub("tarsus", "_tarsus_", resp)
   # resp <- gsub("wing", "_wing_", resp)
-  resp <- gsub("^sum", "sum_", resp)#sum soll nur dahinter einen unterstrich bekommen, wenn es am anfang steht
+  resp <- gsub("sum", "sum_", resp)#sum soll nur dahinter einen unterstrich bekommen, wenn es am anfang steht
   resp <- gsub("N", "_N", resp)
   
   resp_df <- data.frame(Nplots = sum(!is.na(tbl[,resp])))
@@ -152,8 +152,8 @@ prediction_rep <- lapply(models, function(i){
   # resp <- gsub("kipps", "kipps_", resp)
   # resp <- gsub("tarsus", "_tarsus_", resp)
   # resp <- gsub("wing", "_wing_", resp)
-  resp <- gsub("^sum", "sum_", resp)#sum soll nur dahinter einen unterstrich bekommen, wenn es am anfang steht
-  resp <- gsub("N=", "_N=", resp)
+  resp <- gsub("sum", "sum_", resp)#sum soll nur dahinter einen unterstrich bekommen, wenn es am anfang steht
+  resp <- gsub("N", "_N", resp)
   #load single models
   # mod_nm <- models[grepl(resp, models) & grepl(run, models)]
   #print(mod_nm)

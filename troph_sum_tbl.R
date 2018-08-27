@@ -56,19 +56,19 @@ lookup$diet <- factor(lookup$diet, levels = c("generalist",
 
 
 
-troph_sum_tbl <- data.frame(plotID = alpha_tbl$plotID, plotUnq = alpha_tbl$plotUnq)
+troph_sum <- data.frame(plotID = alpha_tbl$plotID, plotUnq = alpha_tbl$plotUnq)
 for (i in levels(trophic_tbl$diet)){
   troph_lst <- lookup$predictor[which(lookup$diet == i)]
   summed <- rowSums(alpha_tbl[, which(colnames(alpha_tbl) %in% 
                                         troph_lst), drop = F], na.rm = T) 
   #drop = F, damit birds und bats mit nur einer spalte trotzdem weiter in die nächste Tabelle geschrieben werden
-  troph_sum_tbl$summed <- summed
-  colnames(troph_sum_tbl)[which(colnames(troph_sum_tbl) == "summed")] <- paste0("sum_", i, "_N", length(troph_lst))
+  troph_sum$summed <- summed
+  colnames(troph_sum)[which(colnames(troph_sum) == "summed")] <- paste0("sum_", i, "_N", length(troph_lst))
 }
 
 
-save(troph_sum_tbl, file = paste0(inpath, "troph_sum_tbl.RData"))
-
+save(troph_sum, file = paste0(inpath, "troph_sum.RData"))
+save(troph_sum, file = paste0(inpath_general, "troph_sum.RData"))
 # mrg_tbl_all <- merge(mrg_tbl, sum_tbl, by = "plotUnq")
 # mrg_tbl <- data.frame(plotID = mrg_tbl_all$plotID.x, plotUnq = mrg_tbl_all$plotUnq, 
 #                       mrg_tbl_all[,c(which(colnames(mrg_tbl_all) == "cat") : ncol(mrg_tbl_all))])
