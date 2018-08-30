@@ -20,7 +20,7 @@ library(dplyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-15_ffs_pls_cv_onlyForest/"
+sub <- "aug18/2018-08-24_ffs_pls_cv_onlyForest_alpha_elev_dstrb/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -77,6 +77,10 @@ act_files <- gsub("body", "body_", act_files)
 act_files <- gsub("kipps", "kipps_", act_files)
 act_files <- gsub("tarsus", "_tarsus_", act_files)
 act_files <- gsub("wing", "_wing_", act_files)
+act_files <- gsub("sum", "sum_", act_files)
+act_files <- gsub("N(\\d+)", "_N\\1", act_files)
+
+
 for (i in nm_resp){
   err_hnd <- act_files[grepl(paste0("_", i), act_files)]
   if(length(err_hnd) != length(outs_lst)){
@@ -112,6 +116,8 @@ smmry_obs <- lapply(models, function(i){
   resp <- gsub("kipps", "kipps_", resp)
   resp <- gsub("tarsus", "_tarsus_", resp)
   resp <- gsub("wing", "_wing_", resp)
+  resp <- gsub("sum", "sum_", resp)
+  resp <- gsub("N(\\d+)", "_N\\1", resp)
   
   resp_df <- data.frame(Nplots = sum(!is.na(tbl[,resp])))
   row.names(resp_df) <- resp
@@ -124,10 +130,6 @@ obs_smmry <- do.call(rbind, smmry_obs)
 obs_smmry <- obs_smmry[which(rownames(obs_smmry) %in% nm_resp),]
 
 saveRDS(obs_smmry, file = paste0(inpath, "obs_smmry.rds"))
-
-##############Numer of Species per plot (mean) per taxa
-
-
 
 
 
@@ -150,6 +152,8 @@ prediction_rep <- lapply(models, function(i){
   resp <- gsub("kipps", "kipps_", resp)
   resp <- gsub("tarsus", "_tarsus_", resp)
   resp <- gsub("wing", "_wing_", resp)
+  resp <- gsub("sum", "sum_", resp)
+  resp <- gsub("N(\\d+)", "_N\\1", resp)
   
   #load single models
   # mod_nm <- models[grepl(resp, models) & grepl(run, models)]

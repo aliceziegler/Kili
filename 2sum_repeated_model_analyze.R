@@ -77,6 +77,8 @@ act_files <- gsub("body", "body_", act_files)
 act_files <- gsub("kipps", "kipps_", act_files)
 act_files <- gsub("tarsus", "_tarsus_", act_files)
 act_files <- gsub("wing", "_wing_", act_files)
+act_files <- gsub("sum", "sum_", act_files)
+act_files <- gsub("N", "_N", act_files)
 for (i in nm_resp){
   err_hnd <- act_files[grepl(paste0("_", i), act_files)]
   if(length(err_hnd) != length(outs_lst)){
@@ -112,7 +114,7 @@ smmry_obs <- lapply(models, function(i){
   # resp <- gsub("kipps", "kipps_", resp)
   # resp <- gsub("tarsus", "_tarsus_", resp)
   # resp <- gsub("wing", "_wing_", resp)
-  resp <- gsub("sum", "sum_", resp)#sum soll nur dahinter einen unterstrich bekommen, wenn es am anfang steht
+  resp <- gsub("sum", "sum_", resp)
   resp <- gsub("N", "_N", resp)
   
   resp_df <- data.frame(Nplots = sum(!is.na(tbl[,resp])))

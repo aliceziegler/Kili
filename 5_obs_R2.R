@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "jul18_50m/2018-08-02_ffs_pls_cv_noForest_noslpasp/"
+sub <- "aug18/2018-08-23_ffs_pls_cv_onlyForest_troph_sum/"
 datpath <- paste0("../data/")
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -21,8 +21,9 @@ if (file.exists(outpath)==F){
 }
 
 ##load files
-tbl <- get(load(paste0(datpath, "dat_ldr_mrg.RData")))
+tbl <- get(load(paste0(inpath, "../dat_ldr_mrg.RData")))
 # nm_resp <- get(load(paste0(inpath, "nm_resp.RData")))
+obs_smmry <- readRDS(paste0(inpath, "obs_smmry.rds"))
 stats <- get(load(paste0(inpath, "stats.RData")))
 stats_comb_all <- stats[, which(colnames(stats)%in% c("resp", "meanR2", "medianR2", "sdR2", 
                                              "meanRMSE", "medianRMSE", "sdRMSE"))]
