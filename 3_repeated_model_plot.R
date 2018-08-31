@@ -13,7 +13,7 @@ library(RColorBrewer)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-24_ffs_pls_cv_onlyForest_alpha_elev_dstrb/"
+sub <- "aug18/2018-08-29_ffs_pls_cv_noForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
@@ -28,9 +28,7 @@ trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 stats <- get(load(paste0(inpath, "stats.RData")))
 obs_smmry <-readRDS(file = paste0(inpath, "obs_smmry.rds"))
 #colnames(stats)[which(colnames(stats) == "Rsquared")] <- "R2"
-R2_df <- unique(data.frame(stats$resp, stats$meanR2))
-R2_df <- R2_df[order(R2_df$stats.meanR2, decreasing = T),]
-write.csv(R2_df, file = paste0(outpath, "R2_df.csv"))
+
 ###rename levels for naming of xlab-ticks ############ACHTUNG R² in spaltenüberschrift o_O############Lösung finden: gibt es eine andere Lösung für ggpot2??
 # levels(stats$resp) <- c( "all plants (resid)", "all animals (resid)", "ants (resid)", 
 #                                "asterids (resid)", "bats (resid)", "bees (resid)", 
@@ -78,8 +76,12 @@ stats$troph <- factor(stats$troph, levels = c("generalist",
 stats <- stats[with(stats, order(troph, resp)),] ####sortierung nach alphabet resp ist nicht sooo optimal, weil resids lfter zusammenstehen und nicht abwechselnd reisid und das entsprechende SR- eventuell "resid" hinten an namen dranschreiben
 stats$resp <- factor(stats$resp, levels = unique(stats$resp))
 
-
 saveRDS(stats, file = paste0(outpath, "stats_troph.RDS"))
+
+R2_df <- unique(data.frame(stats$resp, stats$troph, stats$meanR2))
+R2_df <- R2_df[order(R2_df$stats.meanR2, decreasing = T),]
+
+write.csv(R2_df, file = paste0(outpath, "R2_df.csv"))
 
 ###colour settings
 df_col <- data.frame(troph = levels(stats$troph), col = c("yellow2", "red2", "darkgreen", "sienna2", "green2", "royalblue2", "grey30", "grey100", "purple2"))
