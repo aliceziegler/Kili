@@ -203,6 +203,7 @@ prediction_rep <- lapply(models, function(i){
                       resp = prediction)
   stats <- postResample(prediction, new_df[[resp]])
   return(list(name = resp, 
+              nameUnq = paste0(resp, "_", run), 
               stats = stats, 
               varimp = varimp, 
               selvars = selvars, 
@@ -281,9 +282,11 @@ stats <- data.frame()
 varimp_lst <- list()
 for (x in (seq(nrow(stats_lst)))){
   resp <- stats_lst[x,]$name
+  respUnq <- stats_lst[x,]$nameUnq
   nmbrs <- data.frame(t(stats_lst[x,]$stats))
   varimp <- stats_lst[x,]$varimp
   tmp_stats <- data.frame(resp = resp, 
+                          respUnq = respUnq, 
                           RMSE = nmbrs$RMSE, 
                           Rsquared = nmbrs$Rsquared, 
                           MAE = nmbrs$MAE)
@@ -348,6 +351,8 @@ for (x in (seq(nrow(stats_lst)))){
   gam_prdct_df <- merge(gam_prdct_df, tmp_gam_prdct[,c(2:3)], by = "plotUnq")
   gam_prdct_df <- gam_prdct_df[, !grepl("\\.", colnames(gam_prdct_df))]
 }
+
+gam_prdct_df <- gam_prdct_df[,!grepl("resid", colnames(gam_prdct_df))]
 saveRDS(object = gam_prdct_df, file = paste0(inpath, "gam_prdct_df.rds"))
 # gam_prdct_df <- readRDS(paste0(inpath, "gam_prdct_df.rds"))
 
