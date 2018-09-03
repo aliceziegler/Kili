@@ -24,13 +24,14 @@ if (file.exists(outpath)==F){
 ########################################################################################
 mrg_tbl <- get(load(paste0(inpath, "dat_ldr_mrg.RData")))
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
+# mrg_tbl <- mrg_tbl[!duplicated(mrg_tbl$plotUnq.x),]
 
-#pseudocode
+
 #mrg_tbl alpha nach trophic table zusammenzählen. 
 alpha_tbl <- mrg_tbl[, c(which(colnames(mrg_tbl) == "plotID"), which(colnames(mrg_tbl) == "plotUnq"), 
                          which(colnames(mrg_tbl) == "SRmammals") : which(colnames(mrg_tbl) == "SRallplants"))]
 
-
+alpha_tbl <- alpha_tbl[,!grepl("heteroptera", colnames(alpha_tbl))]
 
 #for (x in (colnames(alpha_tbl)[2:ncol(alpha_tbl)])){
 troph_pred <- lapply(colnames(alpha_tbl)[3:ncol(alpha_tbl)], function(x){
@@ -56,7 +57,7 @@ lookup$diet <- factor(lookup$diet, levels = c("generalist",
 
 
 
-troph_sum <- data.frame(plotID = alpha_tbl$plotID, plotUnq = alpha_tbl$plotUnq)
+troph_sum <- data.frame(plotID = alpha_tbl$plotID)
 for (i in levels(trophic_tbl$diet)){
   troph_lst <- lookup$predictor[which(lookup$diet == i)]
   summed <- rowSums(alpha_tbl[, which(colnames(alpha_tbl) %in% 
@@ -66,10 +67,8 @@ for (i in levels(trophic_tbl$diet)){
   colnames(troph_sum)[which(colnames(troph_sum) == "summed")] <- paste0("sum_", i, "_N", length(troph_lst))
 }
 
+troph_sum <- troph_sum[!duplicated(troph_sum$plotID),]
 
 save(troph_sum, file = paste0(inpath, "troph_sum.RData"))
 save(troph_sum, file = paste0(inpath_general, "troph_sum.RData"))
-# mrg_tbl_all <- merge(mrg_tbl, sum_tbl, by = "plotUnq")
-# mrg_tbl <- data.frame(plotID = mrg_tbl_all$plotID.x, plotUnq = mrg_tbl_all$plotUnq, 
-#                       mrg_tbl_all[,c(which(colnames(mrg_tbl_all) == "cat") : ncol(mrg_tbl_all))])
-# save(mrg_tbl, file = paste0(inpath, "dat_ldr_mrg_sum.RData"))
+

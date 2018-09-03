@@ -18,9 +18,10 @@ library(gsubfn)
 library(plyr)
 library(dplyr)
 library(CAST)
+library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-24_ffs_pls_cv_onlyForest_alpha_elev_dstrb/"
+sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -101,7 +102,7 @@ saveRDS(err_hnd_files, file = paste0(inpath, "err_handling_files.rds"))
 # ##############Number of plots with this taxa
 #i <- models[grep("_SRheteroptera", models)] #######testing
 smmry_obs <- lapply(models, function(i){
-  #print(i)
+  # print(i)
   nm <- strsplit(x = i, split = "_|\\.")
   resp <- nm[[1]][length(nm[[1]])-1]####################sollte auf dauer anders (relativ) angegeben werden!
   run <- nm[[1]][length(nm[[1]])-4]
@@ -155,6 +156,23 @@ prediction_rep <- lapply(models, function(i){
   resp <- gsub("sum", "sum_", resp)
   resp <- gsub("N(\\d+)", "_N\\1", resp)
   
+  
+  #####get gam prediction for each SR
+  if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
+    dat <- data.frame("elevation"= mrg_tbl$elevation,
+                      "response"=mrg_tbl[,grepl(paste0("^", resp, "$"), colnames(mrg_tbl))])
+    mod_gam <- gam(response ~ s(elevation),data=dat)
+    newdat <- data.frame("elevation"= mrg_tbl$elevation)
+    prdct <- predict(object = mod_gam, newdata =  newdat)
+    gam_prdct <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq, resp = prdct)
+    # gam_prdct <- data.frame(gam_prdct, resp = prdct)
+    # colnames(gam_prdct)[colnames(gam_prdct) == "resp"] <- paste0(resp)
+  }else{
+      gam_prdct <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq, resp = NA)
+  }
+  
+
+  
   #load single models
   # mod_nm <- models[grepl(resp, models) & grepl(run, models)]
   #print(mod_nm)
@@ -179,6 +197,10 @@ prediction_rep <- lapply(models, function(i){
   new_df <- df_scl[which(df_scl$plotID %in% outs),]
   colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
   prediction <- predict(mod, newdata = new_df)
+  prdct <- data.frame(plotID = outs, 
+                      plotUnq =  outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotUnq, 
+                      run = run, 
+                      resp = prediction)
   stats <- postResample(prediction, new_df[[resp]])
   return(list(name = resp, 
               stats = stats, 
@@ -186,11 +208,72 @@ prediction_rep <- lapply(models, function(i){
               selvars = selvars, 
               selvars_perf = selvars_perf, 
               selvars_perf_SE = selvars_perf_SE, 
-              perf_all = perf_all
+              perf_all = perf_all, 
+              gam_prdct = gam_prdct, 
+              prdct = prdct
               ))
-  #return(stats)
 
 })
+
+
+
+# ####run
+# prediction_rep <- lapply(models, function(i){
+#   #print(i)
+#   nm <- strsplit(x = i, split = "_|\\.")
+#   resp <- nm[[1]][length(nm[[1]])-1]####################sollte auf dauer anders (relativ) angegeben werden!
+#   run <- nm[[1]][length(nm[[1]])-4]
+#   run_indx <- as.numeric(gsub("[[:alpha:]]", "", run))
+#   
+#   resp <- gsub("jne", "_jne_", resp) #####################sollte auf dauer in ein gsub statement zsuammengefasst werden
+#   resp <- gsub("jac", "_jac_", resp)
+#   resp <- gsub("jtu", "_jtu_", resp)
+#   resp <- gsub("height", "_height_", resp)
+#   resp <- gsub("width", "_width_", resp)
+#   resp <- gsub("body", "body_", resp)
+#   resp <- gsub("kipps", "kipps_", resp)
+#   resp <- gsub("tarsus", "_tarsus_", resp)
+#   resp <- gsub("wing", "_wing_", resp)
+#   resp <- gsub("sum", "sum_", resp)
+#   resp <- gsub("N(\\d+)", "_N\\1", resp)
+# 
+#   
+#   #load single models
+#   # mod_nm <- models[grepl(resp, models) & grepl(run, models)]
+#   #print(mod_nm)
+#   mod <- get(load(file = i))
+#   
+#   ###plot all models in one pdf (lange rechenzeit)
+#   # p <- (plot_ffs(mod)+ggtitle(nm))
+#   # ggsave(filename = paste0(outpath, "plot_ffs_", resp, ".pdf"), plot = p, width = 25,
+#   #        height = 25, units = "cm")
+#   
+#   ###hier var imp und eventuell anderes f�r heatmap berechnen!
+#   varimp <- varImp(mod)$importance
+#   selvars <- mod$selectedvars
+#   selvars_perf <- mod$selectedvars_perf
+#   selvars_perf_SE <- mod$selectedvars_perf_SE
+#   perf_all <- mod$perf_all
+#   
+#   df_scl <- get(load(paste0(inpath, dfs[grep(paste0("_", resp), dfs)])))
+#   
+#   
+#   outs <- outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotID #1$ means search for 1 at end of line
+#   new_df <- df_scl[which(df_scl$plotID %in% outs),]
+#   colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
+#   prediction <- predict(mod, newdata = new_df)
+#   stats <- postResample(prediction, new_df[[resp]])
+#   return(list(name = resp, 
+#               stats = stats, 
+#               varimp = varimp, 
+#               selvars = selvars, 
+#               selvars_perf = selvars_perf, 
+#               selvars_perf_SE = selvars_perf_SE, 
+#               perf_all = perf_all
+#   ))
+#   #return(stats)
+#   
+# })
 stats_lst <- do.call(rbind, prediction_rep)
 
 
@@ -243,5 +326,42 @@ for (j in unique(stats$resp)){
   stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
 }
 
+
+
+
 save(stats, file = paste0(inpath, "stats.RData"))
 #stats <- get(load(paste0(inpath, "stats.RData")))
+
+
+# gam pred###
+
+# stats_lst <- do.call(rbind, prediction_rep)
+
+# stats <- data.frame()
+# varimp_lst <- list()
+gam_prdct_df <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
+for (x in (seq(nrow(stats_lst)))){
+  resp <- stats_lst[x,]$name
+  tmp_gam_prdct <- stats_lst[x,]$gam_prdct
+  colnames(tmp_gam_prdct)[colnames(tmp_gam_prdct) == "resp"] <- resp
+  #summarys
+  gam_prdct_df <- merge(gam_prdct_df, tmp_gam_prdct[,c(2:3)], by = "plotUnq")
+  gam_prdct_df <- gam_prdct_df[, !grepl("\\.", colnames(gam_prdct_df))]
+}
+saveRDS(object = gam_prdct_df, file = paste0(inpath, "gam_prdct_df.rds"))
+# gam_prdct_df <- readRDS(paste0(inpath, "gam_prdct_df.rds"))
+
+
+prdct_df <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
+for (x in (seq(nrow(stats_lst)))){
+  resp <- paste0(stats_lst[x,]$name, "_", unique(stats_lst[x,]$prdct$run))
+  tmp_prdct <- stats_lst[x,]$prdct
+  colnames(tmp_prdct)[colnames(tmp_prdct) == "resp"] <- resp
+  tmp_prdct <- tmp_prdct[,-which(colnames(tmp_prdct) == "run")]
+
+  prdct_df <- merge(prdct_df, tmp_prdct[,c(2:3)], by = "plotUnq", all = T)
+  #prdct_df <- prdct_df[, !grepl("\\.", colnames(prdct_df))]
+  #prdct_df <- prdct_df[, !grepl("run\\.", colnames(prdct_df))]
+}
+
+saveRDS(object = prdct_df, file = paste0(inpath, "prdct_df.rds"))

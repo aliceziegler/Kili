@@ -12,9 +12,10 @@ library(mgcv)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "/"
+sub <- "aug18/"
 inpath <- "../data/"
 outpath <- paste0("../data/", sub)
+outpath_general <- paste0("../data/")
 
 ########################################################################################
 ###Settings
@@ -63,10 +64,11 @@ elev_troph_sum <- elev[which(troph_sum$plotID %in% elev$plotID),]
 
 troph_sum_res <- troph_sum
 
-for (i in c(3:ncol(troph_sum))){
+for (i in c(2:ncol(troph_sum))){
   mod <- gam(troph_sum[,i] ~ s(elev_troph_sum$elevation, k = 5))
   troph_sum_res[!is.na(troph_sum[,i]),i] <- mod$residuals
   colnames(troph_sum_res)[i] <- paste0("resid", colnames(troph_sum_res)[i])
 }
 
 save(troph_sum_res, file = paste0(outpath, "troph_sum_residuals.RData"))
+save(troph_sum_res, file = paste0(outpath_general, "troph_sum_residuals.RData"))
