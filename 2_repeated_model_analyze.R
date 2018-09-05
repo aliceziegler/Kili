@@ -21,7 +21,7 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
+sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
 # sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
