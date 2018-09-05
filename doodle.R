@@ -91,13 +91,20 @@ for (i in colnames(gam_resid)[3:ncol(gam_resid)]){
   match <- substr(i,6, nchar(i)-5)
   stat <- postResample(gam_resid[,which(colnames(gam_resid) == i)], 
                        SR_tbl[,which(colnames(SR_tbl) == match)])
-  stats_gam_resid[which(stats_gam_resid$resp_resid == i), which(colnames(stats_gam_resid) == "R2")] <- stat[2]
-  stats_gam_resid[which(stats_gam_resid$resp_resid == i), which(colnames(stats_gam_resid) == "RMSE")] <- stat[1]
-  stats_gam_resid$resp[which(stats_gam_resid$resp_resid == i)] <- 
-    substr(stats_gam_resid$resp_resid[which(stats_gam_resid$resp_resid == i)], 
-           6, 
-           nchar(as.character(stats_gam_resid$resp_resid[which(stats_gam_resid$resp_resid == i)]))-5)
-}
+  stats_gam_resid[which(stats_gam_resid$resp_resid == i), 
+                  which(colnames(stats_gam_resid) == "R2")] <- stat[2]
+  stats_gam_resid[which(stats_gam_resid$resp_resid == i), 
+                  which(colnames(stats_gam_resid) == "RMSE")] <- stat[1]
+  #stats_gam_resid$resp[which(stats_gam_resid$resp_resid == i)] <- 
+    # substr(stats_gam_resid$resp_resid[which(stats_gam_resid$resp_resid == i)], 
+    #        6, 
+    #        nchar(as.character(stats_gam_resid$resp_resid[which(stats_gam_resid$resp_resid == i)]))-5)
+
+  #stats_gam_resid$resp = paste0(stats_gam_resid$resp_resid, "_test")
+  stats_gam_resid$resp <- substr(as.character(stats_gam_resid$resp_resid), 
+                                6, 
+                                (nchar(as.character(stats_gam_resid$resp_resid))-5))
+  }
 
 saveRDS(object = stats_gam_resid, file = paste0(inpath, "stats_gam_resid.rds"))
 
@@ -106,22 +113,30 @@ saveRDS(object = stats_gam_resid, file = paste0(inpath, "stats_gam_resid.rds"))
 #####################################################################################
 #####################################################################################
 #####################################################################################
-#####################################################################################
-#####################################################################################
-#plotten: 
+
 stats_gam <- readRDS(file = paste0(inpath, "stats_gam.rds"))
 stats_gam_resid <- readRDS(file = paste0(inpath, "stats_gam_resid.rds"))
 stats <- get(load(paste0(inpath, "stats.RData")))
 stats_SR <- stats[which(stats$resp %in% stats_gam$resp), c(which(colnames(stats) %in% c("resp", "respUnq", "Rsquared", "RMSE")))]
 colnames(stats_SR)[which(colnames(stats_SR) == "Rsquared")]<- "R2"
 stats_SR <- data.frame(stats_SR[which(colnames(stats_SR) %in% c("resp", "respUnq"))],stats_SR[which(colnames(stats_SR) =="R2")], stats_SR[which(colnames(stats_SR) == "RMSE")])
-stats_gam_resid$respUnq <- stats_gam_resid$resp
-stats_gam_resid$respUnq <- gsub("resid", "", stats_gam_resid$respUnq)
+stats_SR$type <- "pls"
+stats_gam_resid$respUnq <- stats_gam_resid$resp_resid
+# stats_gam_resid$respUnq <- gsub("resid", "", stats_gam_resid$respUnq)
 stats_gam_resid <- data.frame(stats_gam_resid[which(colnames(stats_gam_resid) == "resp")], 
                               stats_gam_resid[which(colnames(stats_gam_resid) == "respUnq")], 
                               stats_gam_resid[which(colnames(stats_gam_resid) == "R2")], 
-                              stats_gam_resid[which(colnames(stats_gam_resid) == "RMSE")])
+                              stats_gam_resid[which(colnames(stats_gam_resid) == "RMSE")], 
+                              type = "gam_resid")
+
+stats_gam$respUnq <- stats_gam$resp
+stats_gam <- data.frame(stats_gam[which(colnames(stats_gam) == "resp")], 
+                        stats_gam[which(colnames(stats_gam) == "respUnq")], 
+                        stats_gam[which(colnames(stats_gam) == "R2")], 
+                        stats_gam[which(colnames(stats_gam) == "RMSE")], 
+                        type = "gam")
 
 ###merge stats table by unique resp (with run): 
+stats_mrg <- rbind(stats_SR, stats_gam, stats_gam_resid)
 
-respUnq_mrg <- rbind(stats_SR[,c(2:4)], stats_gam_resid, by = "respUnq")
+#plotten: 
