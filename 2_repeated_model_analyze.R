@@ -22,6 +22,7 @@ library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
+# sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -160,7 +161,7 @@ prediction_rep <- lapply(models, function(i){
   #####get gam prediction for each SR
   if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
     dat <- data.frame("elevation"= mrg_tbl$elevation,
-                      "response"=mrg_tbl[,grepl(paste0("^", resp, "$"), colnames(mrg_tbl))])
+                      "response"= mrg_tbl[,grepl(paste0("^", resp, "$"), colnames(mrg_tbl))])
     mod_gam <- gam(response ~ s(elevation),data=dat)
     newdat <- data.frame("elevation"= mrg_tbl$elevation)
     prdct <- predict(object = mod_gam, newdata =  newdat)
@@ -195,6 +196,10 @@ prediction_rep <- lapply(models, function(i){
   
   outs <- outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotID #1$ means search for 1 at end of line
   new_df <- df_scl[which(df_scl$plotID %in% outs),]
+  if (nrow(new_df) < length(outs)){ #####wie kann das n�tig werden= wo passeirt das in skript 1? 
+    new_df_outs <- data.frame(plotID = outs)
+    new_df <- merge(new_df, new_df_outs, by = "plotID", all = T)
+  }
   colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
   prediction <- predict(mod, newdata = new_df)
   prdct <- data.frame(plotID = outs, 
