@@ -22,7 +22,7 @@
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 # sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
-sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
 
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -51,14 +51,10 @@ if (all_plts == F){
   }
 }
 
-if (frst == T){
-  gam_prdct_cv_df <- readRDS(file = paste0(inpath, "../gam_prdct_cv_df_frst.rds"))
-}else if (frst == F){
-  gam_prdct_cv_df <- readRDS(file = paste0(inpath, "../gam_prdct_cv_df_nofrst.rds"))
-}
-gam_prdct_df <- readRDS(paste0(inpath, "gam_prdct_df.rds"))
+gam_prdct_cv_df <- readRDS(file = paste0(outpath, "gam_prdct_cv_df.rds"))
+gam_prdct_df <- readRDS(paste0(outpath, "gam_prdct_df.rds"))
 mrg_tbl <- get(load(paste0(inpath, "../dat_ldr_mrg.RData")))   
-prdct_df <- readRDS(file = paste0(inpath, "prdct_df.rds"))
+prdct_df <- readRDS(file = paste0(outpath, "prdct_df.rds"))
 trophic_tbl <- get(load(paste0(inpath, "../../trophic_tbl.RData")))
 
 
@@ -75,7 +71,7 @@ prdct_res <- prdct_df[,c(which(colnames(prdct_df) == "plotID"),
 
 ###add gam to predicted resids
 gam_resid <- data.frame(plotID = gam_prdct_df$plotID, plotUnq = gam_prdct_df$plotUnq)
-###############################################################################hier muss wg _run zusatz grepl rein
+##############################################hier muss wg _run zusatz grepl rein
 for(i in colnames(prdct_res)[3:ncol(prdct_res)]){
   #match gam (of SR) to predicted resids - and add
   match <- substr(i,6, nchar(i)-5)
@@ -83,6 +79,7 @@ for(i in colnames(prdct_res)[3:ncol(prdct_res)]){
   colnames(gam_resid)[which(colnames(gam_resid) == "tmp")] <- i
 }
   
+saveRDS(object = gam_resid, file = paste0(outpath, "gam_resid.rds"))
 #   if(i %in% colnames(gam_prdct_df) & i %in% colnames(res_tbl)){
 #     gam_resid$tmp <- gam_prdct_df[,i]+res_tbl[,i]
 #     colnames(gam_resid)[which(colnames(gam_resid) == "tmp")] <- i
@@ -103,13 +100,13 @@ SR_tbl <- mrg_tbl[, which(colnames(mrg_tbl) %in% colnames(gam_prdct_df))]
 
 ###R2 cv gam to original Data SR
 stats_gam_cv <- data.frame(respUnq = colnames(gam_prdct_cv_df)[4:ncol(gam_prdct_cv_df)], R2 = NA, RMSE = NA)
-for (i in colnames(gam_prdct_cv_df)[4:ncol(gam_prdct_cv_df)]){
-  if (substr(i,1, (nchar(i)-6)) %in% colnames(SR_tbl)){
+for (i in colnames(gam_prdct_cv_df)[3:ncol(gam_prdct_cv_df)]){
+  if (substr(i,5, (nchar(i)-6)) %in% colnames(SR_tbl)){
     stat <- postResample(gam_prdct_cv_df[which(substr(gam_prdct_cv_df$plotID,1, 3) %in% cat),
                                          which(colnames(gam_prdct_cv_df) == i)], 
                          #SR_tbl[,which(colnames(SR_tbl) == i)])
                          SR_tbl[which(substr(SR_tbl$plotID,1, 3) %in% cat), 
-                                grepl(substr(i,1, (nchar(i)-6)), colnames(SR_tbl))])
+                                grepl(substr(i,5, (nchar(i)-6)), colnames(SR_tbl))])
     stats_gam_cv[which(stats_gam_cv$respUnq == i), which(colnames(stats_gam_cv) == "R2")] <- stat[2]
     stats_gam_cv[which(stats_gam_cv$respUnq == i), which(colnames(stats_gam_cv) == "RMSE")] <- stat[1]  
   }else {
@@ -119,7 +116,7 @@ for (i in colnames(gam_prdct_cv_df)[4:ncol(gam_prdct_cv_df)]){
   
 }
 stats_gam_cv$resp <- substr(as.character(stats_gam_cv$respUnq), 
-                               1, 
+                               5, 
                                (nchar(as.character(stats_gam_cv$respUnq))-6))
 stats_gam_cv <- data.frame(resp = stats_gam_cv$resp, 
                            respUnq = stats_gam_cv$respUnq, 
@@ -127,7 +124,7 @@ stats_gam_cv <- data.frame(resp = stats_gam_cv$resp,
                            RMSE = stats_gam_cv$RMSE, 
                            type = "gam_cv")
 
-saveRDS(object = stats_gam_cv, file = paste0(inpath, "stats_gam_cv.rds"))
+saveRDS(object = stats_gam_cv, file = paste0(outpath, "stats_gam_cv.rds"))
 
 
 
@@ -139,7 +136,7 @@ for (i in colnames(gam_prdct_df)[3:ncol(gam_prdct_df)]){
   stats_gam[which(stats_gam$resp == i), which(colnames(stats_gam) == "R2")] <- stat[2]
   stats_gam[which(stats_gam$resp == i), which(colnames(stats_gam) == "RMSE")] <- stat[1]
   }
-saveRDS(object = stats_gam, file = paste0(inpath, "stats_gam.rds"))
+saveRDS(object = stats_gam, file = paste0(outpath, "stats_gam.rds"))
 
 
 ####R2 gam + predicted resid to original Data SR
@@ -163,7 +160,7 @@ for (i in colnames(gam_resid)[3:ncol(gam_resid)]){
                                 (nchar(as.character(stats_gam_resid$resp_resid))-5))
   }
 
-saveRDS(object = stats_gam_resid, file = paste0(inpath, "stats_gam_resid.rds"))
+saveRDS(object = stats_gam_resid, file = paste0(outpath, "stats_gam_resid.rds"))
 # stats_gam_resid <- readRDS(file = paste0(inpath, "stats_gam_resid.rds"))
 
 
@@ -171,10 +168,10 @@ saveRDS(object = stats_gam_resid, file = paste0(inpath, "stats_gam_resid.rds"))
 #####################################################################################
 #####################################################################################
 
-stats_gam <- readRDS(file = paste0(inpath, "stats_gam.rds"))
-stats_gam_resid <- readRDS(file = paste0(inpath, "stats_gam_resid.rds"))
+stats_gam <- readRDS(file = paste0(outpath, "stats_gam.rds"))
+stats_gam_resid <- readRDS(file = paste0(outpath, "stats_gam_resid.rds"))
 stats <- get(load(paste0(inpath, "stats.RData")))
-stats_gam_cv <- readRDS(file = paste0(inpath, "stats_gam_cv.rds"))
+stats_gam_cv <- readRDS(file = paste0(outpath, "stats_gam_cv.rds"))
 stats_SR <- stats[which(stats$resp %in% stats_gam$resp), c(which(colnames(stats) %in% c("resp", "respUnq", "Rsquared", "RMSE")))]
 colnames(stats_SR)[which(colnames(stats_SR) == "Rsquared")]<- "R2"
 stats_SR <- data.frame(stats_SR[which(colnames(stats_SR) %in% c("resp", "respUnq"))],stats_SR[which(colnames(stats_SR) =="R2")], stats_SR[which(colnames(stats_SR) == "RMSE")])
@@ -224,7 +221,7 @@ stats_mrg$resp <- factor(stats_mrg$resp, levels = unique(stats_mrg$resp))
 
 
 
-saveRDS(object = stats_mrg, file = paste0(inpath, "stats_mrg.rds"))
+saveRDS(object = stats_mrg, file = paste0(outpath, "stats_mrg.rds"))
 #stats_mrg <- readRDS(file = paste0(inpath, "stats_mrg.rds"))
 
 
@@ -245,5 +242,6 @@ ggplot(data = stats_mrg, aes(x=resp, y=R2)) +
   fillscl+ 
   ggtitle(title)
 dev.off()
+
 
 

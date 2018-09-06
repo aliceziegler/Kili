@@ -21,7 +21,7 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
 # sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -199,39 +199,65 @@ prediction_rep <- lapply(models, function(i){
   
   #####get gam cv predictions for each SR
 
+  # gam_cv_prdct <- lapply(seq(length(outs_lst)), function(k){
+  #   out_plt <- outs_lst[[k]]$plotID
+  #   mrg_out <- mrg_tbl[-which(mrg_tbl$plotID %in% out_plt),]
+  #   dat <- data.frame("elevation"= mrg_out$elevation, 
+  #                     "response"= mrg_out[,grepl(paste0("^", resp, "$"), 
+  #                                                colnames(mrg_out))])
+  #   mod_gam <- gam(response ~ s(elevation),data=dat)
+  #   newdat <- data.frame("elevation"= mrg_out$elevation)
+  #   if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
+  #     prdct <- predict(object = mod_gam, newdata =  newdat)
+  #   }else{
+  #     prdct <- NA
+  #   }
+  #   prdct_df <- cbind(mrg_out$plotID, mrg_out$plotUnq, dat, prdct)
+  #   # colnames(prdct_df)[which(colnames(prdct_df) == "prdct")] <- paste0(j, "_", "run_", i)
+  #   colnames(prdct_df) <- c("plotID", "plotUnq", "elevation", resp, paste0("prd_", resp, "_", "run_", k))
+  #   return(prdct_df = prdct_df)
+  # })
+    
   gam_cv_prdct <- lapply(seq(length(outs_lst)), function(k){
     out_plt <- outs_lst[[k]]$plotID
-    mrg_out <- mrg_tbl[-which(mrg_tbl$plotID %in% out_plt),]
-    dat <- data.frame("elevation"= mrg_out$elevation, 
-                      "response"= mrg_out[,grepl(paste0("^", resp, "$"), 
-                                                 colnames(mrg_out))])
+    mrg_in <- mrg_tbl[-which(mrg_tbl$plotID %in% out_plt),]
+    mrg_out <- mrg_tbl[which(mrg_tbl$plotID %in% out_plt),]
+    dat <- data.frame("elevation"= mrg_in$elevation, 
+                      "response"= mrg_in[,grepl(paste0("^", resp, "$"), 
+                                                 colnames(mrg_in))])
     mod_gam <- gam(response ~ s(elevation),data=dat)
-    newdat <- data.frame("elevation"= mrg_out$elevation)
+    newdat <- data.frame("elevation" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevation"])
+    #newdat <- data.frame("elevation"= mrg_in$elevation)
     if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
       prdct <- predict(object = mod_gam, newdata =  newdat)
     }else{
       prdct <- NA
     }
-    prdct_df <- cbind(mrg_out$plotID, mrg_out$plotUnq, dat, prdct)
+    prdct_df <- data.frame(plotID = mrg_out$plotID, 
+                           plotUnq = mrg_out$plotUnq, 
+                           elevation = mrg_out$elevation, 
+                           resp = mrg_out[,which(colnames(mrg_out) == resp)], 
+                           prdct= prdct)
     # colnames(prdct_df)[which(colnames(prdct_df) == "prdct")] <- paste0(j, "_", "run_", i)
-    colnames(prdct_df) <- c("plotID", "plotUnq", "elevation", resp, paste0(resp, "_", "run_", k))
+    colnames(prdct_df) <- c("plotID", "plotUnq", "elevation", resp, paste0("prd_", resp, "_", "run_", k))
     return(prdct_df = prdct_df)
   })
-    
   
   
-  new_df <- df_scl[which(df_scl$plotID %in% outs),]
+  ###prediction of Sr and resid data
+  new_df <- df_scl[which(df_scl$plotID %in% outs), ]
   if (nrow(new_df) < length(outs)){ #####wie kann das n�tig werden= wo passeirt das in skript 1? 
     new_df_outs <- data.frame(plotID = outs)
     new_df <- merge(new_df, new_df_outs, by = "plotID", all = T)
   }
   colnames(new_df)[5] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
  ###predict with pls normal model!
-   prediction <- predict(mod, newdata = new_df)
+  prediction <- predict(mod, newdata = new_df)
   prdct <- data.frame(plotID = outs, 
                       plotUnq =  outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotUnq, 
                       run = run, 
                       resp = prediction)
+  #predicttion_all <- predict(mod, newdata = new_df_all)
   stats <- postResample(prediction, new_df[[resp]])
   return(list(name = resp, 
               nameUnq = paste0(resp, "_", run), 
@@ -274,6 +300,11 @@ for (x in (seq(nrow(stats_lst)))){
 
 saveRDS(varimp_lst, file = paste0(outpath, "varimp_lst.rds"))
 #varimp_lst <- readRDS(file = paste0(inpath, "varimp_lst.rds"))
+
+
+
+
+
 
 
 #########################################
@@ -334,10 +365,6 @@ saveRDS(object = gam_prdct_df, file = paste0(outpath, "gam_prdct_df.rds"))
 # gam_prdct_df <- readRDS(paste0(outpath, "gam_prdct_df.rds"))
 
 ###gam prdct_cv df
-# for (x in (seq(nrow(stats_lst)))){
-#   
-#   gam_cv_prdct <- stats_lst[x,]$gam_cv_prdct
-# }
 
 gam_cv_df_mrg_lst <- lapply(seq(nrow(stats_lst)), function(k){
   gam_cv_prdct<- stats_lst[k,]$gam_cv_prdct
@@ -352,7 +379,17 @@ gam_prdct_cv_df <- gam_prdct_cv_df[, !grepl("\\.", colnames(gam_prdct_cv_df))]
 gam_prdct_cv_df <- data.frame(plotID = substr(gam_prdct_cv_df$plotUnq, 1, 4), 
                               plotUnq = gam_prdct_cv_df$plotUnq, 
                               #elevation = gam_prdct_cv_df$elevation, 
-                              gam_prdct_cv_df[,grepl("run", colnames(gam_prdct_cv_df))])
+                              #gam_prdct_cv_df[,grepl("run", colnames(gam_prdct_cv_df))]) 
+                              gam_prdct_cv_df[,-(which(colnames(gam_prdct_cv_df) == "plotUnq"))])
+gam_prdct_cv_df <- gam_prdct_cv_df[,colSums(is.na(gam_prdct_cv_df)) < nrow(gam_prdct_cv_df)]
+gam_prdct_cv_df <- gam_prdct_cv_df[,-which(grepl("resid", colnames(gam_prdct_cv_df)))]
+gam_rlvnt <- colnames(gam_prdct_cv_df)[grepl("run", colnames(gam_prdct_cv_df))]
+gam_rlvnt_Unq <- unique(substr(gam_rlvnt, 5, nchar(gam_rlvnt)-6))
+gam_prdct_cv_df <- gam_prdct_cv_df[,c(which(colnames(gam_prdct_cv_df) =="plotID"), 
+                                   which(colnames(gam_prdct_cv_df) =="plotUnq"), 
+                                   which(grepl("run", colnames(gam_prdct_cv_df)))#, 
+                                   #which(colnames(gam_prdct_cv_df) %in% gam_rlvnt_Unq)
+                                   )]
 saveRDS(object = gam_prdct_cv_df, file = paste0(outpath, "gam_prdct_cv_df.rds"))
 
 ####prediction df
@@ -369,3 +406,21 @@ for (x in (seq(nrow(stats_lst)))){
 }
 
 saveRDS(object = prdct_df, file = paste0(outpath, "prdct_df.rds"))
+
+
+####add gam and predicted resid
+prdct_res <- prdct_df[,c(which(colnames(prdct_df) == "plotID"), 
+                         which(colnames(prdct_df) == "plotUnq"),
+                         which(grepl("resid", colnames(prdct_df)) & 
+                                 !grepl("NMDS", colnames(prdct_df))))]
+gam_resid <- data.frame(plotID = gam_prdct_df$plotID, plotUnq = gam_prdct_df$plotUnq)
+##############################################hier muss wg _run zusatz grepl rein
+for(i in colnames(prdct_res)[3:ncol(prdct_res)]){
+  #match gam (of SR) to predicted resids - and add
+  match <- substr(i,6, nchar(i)-5)
+  gam_resid$tmp <- gam_prdct_df[,match] + prdct_res[,i]
+  colnames(gam_resid)[which(colnames(gam_resid) == "tmp")] <- i
+}
+
+saveRDS(object = gam_resid, file = paste0(outpath, "gam_resid.rds"))
+

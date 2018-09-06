@@ -38,8 +38,8 @@ tbl_rw <- get(load(paste0(inpath, tbl_nm)))
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
               which(colnames(tbl_rw) %in% "dstrb"),
               which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residrosids_jac_NMDS2"),
-              which(colnames(tbl_rw) %in% "sum_predator_N5"): which(colnames(tbl_rw) %in% "sum_bats_N1"), 
-              which(colnames(tbl_rw) %in% "residsum_predator_N5"): which(colnames(tbl_rw) %in% "residsum_bats_N1"),
+              which(colnames(tbl_rw) %in% "sum_generalist_N4"): which(colnames(tbl_rw) %in% "sum_bats_N1"), 
+              which(colnames(tbl_rw) %in% "residsum_generalist_N4"): which(colnames(tbl_rw) %in% "residsum_bats_N1"),
               which(colnames(tbl_rw) %in% "plotUnq"), 
               which(colnames(tbl_rw) %in% "AGB"), 
               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "BE_PR_55"), 
@@ -57,19 +57,35 @@ tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in
 tbl <- tbl_rw[,tbl_cols]
 #saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
+
 #^ and $ means only to look for this expression and not for resid_SRmammals
-nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
+nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRmillipedes$", names(tbl))), 
+                           seq(grep("^SRotheraculeata$", names(tbl)), grep("^SRsnails$", names(tbl))),
                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
-                           seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
+                           seq(grep("residSRmammals", names(tbl)), grep("residSRmillipedes", names(tbl))), 
+                           seq(grep("residSRotheraculeata", names(tbl)), grep("residSRsnails", names(tbl))),
                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
-                           seq(grep("^sum_predator_N5", names(tbl)), grep("residsum_bats_N1", names(tbl))))]
+                           seq(grep("^sum_generalist_N4", names(tbl)), grep("residsum_bats_N1", names(tbl))))]
 # nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
 #                              grep("sum_bats_N1", names(tbl)))]
 nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
-                             grep("gap_frac", names(tbl))), 
-                         grep("elevation", names(tbl)), 
-                         grep("dstrb", names(tbl)))]
+                               grep("gap_frac", names(tbl))))]#, 
+# grep("elevation", names(tbl)), 
+# grep("dstrb", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
+# #^ and $ means only to look for this expression and not for resid_SRmammals
+# nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
+#                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
+#                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
+#                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
+#                            seq(grep("^sum_predator_N5", names(tbl)), grep("residsum_bats_N1", names(tbl))))]
+# # nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
+# #                              grep("sum_bats_N1", names(tbl)))]
+# nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
+#                              grep("gap_frac", names(tbl))), 
+#                          grep("elevation", names(tbl)), 
+#                          grep("dstrb", names(tbl)))]
+# nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 ###selectors
 tbl$selID <- as.integer(substr(tbl$plotID, 4, 4))
 
