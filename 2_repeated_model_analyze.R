@@ -21,8 +21,8 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
-# sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
+# sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -124,7 +124,9 @@ smmry_obs <- lapply(models, function(i){
   resp_df <- data.frame(Nplots = sum(!is.na(tbl[,resp])))
   row.names(resp_df) <- resp
   meanN_perplot <- mean(tbl[,resp], na.rm = T)
+  sd_per_resp <- sd(tbl[,resp], na.rm = T)
   resp_df$meanN_perplot <- meanN_perplot
+  resp_df$sd_per_resp <- sd_per_resp
 
   return(resp_df)
 })
