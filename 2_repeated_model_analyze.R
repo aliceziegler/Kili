@@ -21,8 +21,8 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
-# sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+# sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -257,8 +257,18 @@ prediction_rep <- lapply(models, function(i){
                       plotUnq =  outs_lst[[grep(paste0(run_indx, "$"), names(outs_lst))]]$plotUnq, 
                       run = run, 
                       resp = prediction)
-  #predicttion_all <- predict(mod, newdata = new_df_all)
   stats <- postResample(prediction, new_df[[resp]])
+  
+  ###prediction of Sr and resid data on all plots
+  new_df_all <- df_scl
+  colnames(new_df_all)[5] <- resp
+  prediction_all <- predict(mod, newdata = new_df_all)
+  prdct_all <- data.frame(plotID = df_scl$plotID, 
+                          plotUnq =  df_scl$plotUnq, 
+                          run = run, 
+                          resp = prediction_all)
+  
+
   return(list(name = resp, 
               nameUnq = paste0(resp, "_", run), 
               stats = stats, 
@@ -269,6 +279,7 @@ prediction_rep <- lapply(models, function(i){
               perf_all = perf_all, 
               gam_prdct = gam_prdct, 
               prdct = prdct, 
+              prdct_all = prdct_all, 
               gam_cv_prdct = gam_cv_prdct
               ))
 
@@ -404,8 +415,24 @@ for (x in (seq(nrow(stats_lst)))){
   #prdct_df <- prdct_df[, !grepl("\\.", colnames(prdct_df))]
   #prdct_df <- prdct_df[, !grepl("run\\.", colnames(prdct_df))]
 }
-
 saveRDS(object = prdct_df, file = paste0(outpath, "prdct_df.rds"))
+
+
+####prediction df_all
+prdct_df_all <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
+for (x in (seq(nrow(stats_lst)))){
+  resp <- paste0(stats_lst[x,]$name, "_", unique(stats_lst[x,]$prdct_all$run))
+  tmp_prdct_all <- stats_lst[x,]$prdct_all
+  colnames(tmp_prdct_all)[colnames(tmp_prdct_all) == "resp"] <- resp
+  tmp_prdct_all <- tmp_prdct_all[,-which(colnames(tmp_prdct_all) == "run")]
+  
+  prdct_df_all <- merge(prdct_df_all, tmp_prdct_all[,c(2:3)], by = "plotUnq", all = T)
+  #prdct_df <- prdct_df[, !grepl("\\.", colnames(prdct_df))]
+  #prdct_df <- prdct_df[, !grepl("run\\.", colnames(prdct_df))]
+}
+
+saveRDS(object = prdct_df_all, file = paste0(outpath, "prdct_df_all.rds"))
+
 
 
 ####add gam and predicted resid
