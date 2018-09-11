@@ -22,7 +22,7 @@ library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 # sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
-sub <- "aug18/2018-08-31_ffs_pls_cv_onlyForest_alpha_all/"
+sub <- "sep18/2018-09-07_ffs_pls_cv_noForest_alpha_all_RMSE/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -67,6 +67,7 @@ if (all_plts == F){
   }
   tbl <- mrg_tbl[which(mrg_tbl$cat %in% cat),]
 }
+
 #####check which models were dissmissed due to errorhandling###############
 err_hnd_files <- c()
 act_files <- list.files(inpath)[grep("indv_model", list.files(inpath))]

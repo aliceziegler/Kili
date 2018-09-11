@@ -12,7 +12,7 @@ library(mgcv)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/"
+sub <- "sep18/"
 inpath <- "../data/"
 outpath <- paste0("../data/", sub)
 outpath_general <- paste0("../data/")
@@ -26,7 +26,7 @@ outpath_general <- paste0("../data/")
 ########################################################################################
 
 dat_SR <- get(load(paste0(inpath, "dat_SR.RData")))
-beta <- get(load(paste0(inpath, "beta_anm_plnt.RData")))
+#beta <- get(load(paste0(inpath, "beta_anm_plnt.RData")))
 elev <- data.frame(elevation = dat_SR$elevation, plotID = dat_SR$plotID)
 troph_sum <- get(load(paste0(inpath, "troph_sum.RData")))
 
@@ -34,6 +34,8 @@ troph_sum <- get(load(paste0(inpath, "troph_sum.RData")))
 tbl <- cbind(plotID = dat_SR$plotID, 
              dat_SR[,c(which(colnames(dat_SR) %in% "SRmammals") : 
                          which(colnames(dat_SR) %in% "SRallplants"))])
+
+
 
 tbl_res <- tbl
 for (i in c(2:ncol(tbl))){

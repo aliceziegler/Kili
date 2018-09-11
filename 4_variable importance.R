@@ -17,7 +17,7 @@ library(grid)
 library(compositions)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
+sub <- "sep18/2018-09-07_ffs_pls_cv_noForest_alpha_all_RMSE/"
 # sub <- "jul18_50m/2018-07-16_ffs_pls_cv_noForest/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -26,7 +26,7 @@ if (file.exists(outpath)==F){
 }
 
 ###############################################
-varimp_lst <- readRDS(paste0(inpath, "varimp_lst.rds"))
+varimp_lst <- readRDS(paste0(outpath, "varimp_lst.rds"))
 stats <- readRDS(paste0(outpath, "stats_troph.RDS"))
 
 troph_grp <- unique(data.frame(stats$resp, stats$troph))
@@ -298,3 +298,4 @@ for (i in seq(variations)){#####################################################
   }
 }
 dev.off()
+

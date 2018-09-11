@@ -1,7 +1,7 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-02-09 15:05:58
-###to do: subdir ist bedingt durch moddir weiter unten...unschÃ¶n
+###to do: subdir ist bedingt durch moddir weiter unten...unschön
 rm(list=ls())
 
 ########################################################################################
@@ -52,11 +52,10 @@ tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in
               which(colnames(tbl_rw) %in% "sd_rtrn_1"),
               which(colnames(tbl_rw) %in% "gap_frac"))
 ###
-# tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelÃ¶st werden 
+# tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelöst werden 
 ###
 tbl <- tbl_rw[,tbl_cols]
 #saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
-
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRmillipedes$", names(tbl))), 
@@ -73,19 +72,6 @@ nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
 # grep("elevation", names(tbl)), 
 # grep("dstrb", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
-# #^ and $ means only to look for this expression and not for resid_SRmammals
-# nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
-#                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
-#                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
-#                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
-#                            seq(grep("^sum_predator_N5", names(tbl)), grep("residsum_bats_N1", names(tbl))))]
-# # nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
-# #                              grep("sum_bats_N1", names(tbl)))]
-# nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
-#                              grep("gap_frac", names(tbl))), 
-#                          grep("elevation", names(tbl)), 
-#                          grep("dstrb", names(tbl)))]
-# nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 ###selectors
 tbl$selID <- as.integer(substr(tbl$plotID, 4, 4))
 
@@ -99,7 +85,7 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_noForest"
+comm <- "_cv_noForest_alpha_all"
 ind_nums <- sort(unique(tbl$selID))
 ind_nums <- ind_nums[ind_nums>0]
 all_plts <- F
@@ -113,7 +99,7 @@ if (file.exists(modDir)==F){
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
 ########################################################################################
-#choose which plots are beeing used and delete responses, that have less that have values for less 15 plots #########verbessern: relativ gestalten und dann für alle nicht nur forest
+#choose which plots are beeing used and delete responses, that have less that have values for less 15 plots #########verbessern: relativ gestalten und dann f?r alle nicht nur forest
 if (all_plts == F){
   if (frst == T){
     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
@@ -155,8 +141,8 @@ scl_lst <- lapply(df_pred, function(i){
 df_scl_pred <- do.call(data.frame, scl_lst)
 
 ########################################################################################
-###resampling by group = FÃ¼r jede Landnutzungsform einen Plot je Durchlauf raus
-###nehmen (nach Plotnummer, restliche zufÃ¤llig)
+###resampling by group = Für jede Landnutzungsform einen Plot je Durchlauf raus
+###nehmen (nach Plotnummer, restliche zufällig)
 ########################################################################################
 # outs_lst <- lapply(seq(ind_num), function(k){
 #   out_sel <- df_meta[which(df_meta$selID == k),]
@@ -170,7 +156,7 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 8
+cl <- 21
 registerDoParallel(cl)
 
 # cl <- makePSOKcluster(10L)
@@ -187,13 +173,13 @@ registerDoParallel(cl)
 #                      "SRconifers", "SRferns", "SRmagnoliids", "SRallplants"), .packages=c("caret", "CAST", "plyr"))%dopar%{
 
 model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-# model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-# clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
-#                     "tuneLength", "modDir", "type", "i"))
-# model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-#model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-#model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-#model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+  # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+  # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
+  #                     "tuneLength", "modDir", "type", "i"))
+  # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+  #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+  #model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+  #model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
   ########################################################################################
   ###create and filter dataframe with all predictors and one response
   ########################################################################################
@@ -232,7 +218,7 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
     #   }
     # }
     # save(outs_lst, file = paste0(modDir, "/outs_lst_", i, ".RData"))
-  
+    
     
     df_test <- df_scl[which(df_scl$plotID %in% outs_lst[[j]]$plotID),]
     df_train <- df_scl[!(df_scl$plotID %in% df_test$plotID),]
@@ -259,14 +245,12 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
     ################
     ################
     
-
     
     
-    cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie Ã¼bergeben
+    
+    cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
       out_res <- as.integer(rownames(cvouts_lst[[i]]))
     })
-    
-
     
     cvIndex <- lapply(cvouts_lst, function(i){
       res <- which(!(df_train$plotID %in% i$plotID))
@@ -277,9 +261,9 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
       mod <- rfe(pred, resp, method = method,
                  rfeControl = rfe_cntrl, tuneLength = tuneLength)
     }else if (type == "ffs"){
-      mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),###bedeutet, dass tune length = 1 gesezt wird!?
-          trControl = trainControl(index = cvIndex, 
-                                   allowParallel = F)) ##########PLATZHALTER###########))
+      mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), metric = "RMSE"
+                 trControl = trainControl(index = cvIndex, 
+                                          allowParallel = F)) ##########PLATZHALTER###########))
     }
     # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
     # trControl = trainControl(index = cvIndex, allowParallel = F))

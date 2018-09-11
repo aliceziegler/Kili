@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/2018-08-23_ffs_pls_cv_onlyForest_troph_sum/"
+sub <- "sep18/2018-09-08_ffs_pls_cv_noForest_alpha_all_RMSE/"
 datpath <- paste0("../data/")
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)

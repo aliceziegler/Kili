@@ -12,7 +12,7 @@ rm(list=ls())
 
 #Sources:
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "aug18/"
+sub <- "sep18/"
 inpath <- paste0("../data/", sub)
 inpath_general <- "../data/"
 outpath <- paste0("../out/", sub)
@@ -22,7 +22,8 @@ if (file.exists(outpath)==F){
 ########################################################################################
 ###Settings
 ########################################################################################
-mrg_tbl <- get(load(paste0(inpath, "dat_ldr_mrg.RData")))
+#mrg_tbl <- get(load(paste0(inpath, "dat_ldr_mrg.RData")))
+dat_SR <- get(load(file = paste0(inpath_general, "dat_SR.RData")))
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 # mrg_tbl <- mrg_tbl[!duplicated(mrg_tbl$plotUnq.x),]
 
