@@ -37,13 +37,17 @@ for (i in colnames(dat_filt)[c(which(colnames(dat_filt) == "SRmammals") :
 #add 
 dat_filt$dstrb <- ifelse(dat_filt$luidich == "Disturbed", 1, 0)
 dat_filt$dstrb <- as.logical(dat_filt$dstrb)
+dat_filt$elevsq <- (dat_filt$elevation)^2
 dat_SR <- dat_filt[,c(which(colnames(dat_filt) == "plotID") : 
-                          which(colnames(dat_filt) == "lui"), 
+                          which(colnames(dat_filt) == "elevation"),
+                      which(colnames(dat_filt) == "elevsq"), 
+                      which(colnames(dat_filt) == "easting") : 
+                        which(colnames(dat_filt) == "lui"),
                         which(colnames(dat_filt) == "dstrb"), 
                         which(colnames(dat_filt) == "SRmammals") : 
                           which(colnames(dat_filt) == "SRallplants"))]
 
 
 
-save(dat_SR, file = paste0(inpath, "dat_SR.RData"))
+save(dat_SR, file = paste0(outpath, "dat_SR.RData"))
 

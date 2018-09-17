@@ -16,7 +16,7 @@ library(parallel)
 library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-#setwd("/media/memory02/users/aziegler/src")
+# setwd("/media/memory02/users/aziegler/src")
 sub <- "sep18/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
@@ -85,10 +85,10 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_nolyForest_alpha_all_RMSE_elev_dstrb"
+comm <- "_cv_all_plots_alpha_all_RMSE_elev_dstrb"
 ind_nums <- sort(unique(tbl$selID))
 ind_nums <- ind_nums[ind_nums>0]
-all_plts <- F
+all_plts <- T
 frst <- F # set true if model should only be done for forested plots
 
 modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
@@ -156,12 +156,13 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 15
+cl <- 1
 registerDoParallel(cl)
 
 
-model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-  # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+# model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRorthoptera", "SRmoths", "sum_herbivore_N3"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+   # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
   # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{

@@ -23,18 +23,27 @@ if (file.exists(outpath)==F){
 ###Settings
 ########################################################################################
 #mrg_tbl <- get(load(paste0(inpath, "dat_ldr_mrg.RData")))
-dat_SR <- get(load(file = paste0(inpath_general, "dat_SR.RData")))
+dat_SR <- get(load(file = paste0(inpath, "dat_SR.RData")))
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 # mrg_tbl <- mrg_tbl[!duplicated(mrg_tbl$plotUnq.x),]
 
+#dat_SR alpha nach trophic table zusammenzählen. 
+alpha_tbl <- dat_SR[, c(which(colnames(dat_SR) == "plotID"), 
+                        which(colnames(dat_SR) == "SRmammals") : 
+                          which(colnames(dat_SR) == "SRallplants"))]
 
-#mrg_tbl alpha nach trophic table zusammenzählen. 
-alpha_tbl <- mrg_tbl[, c(which(colnames(mrg_tbl) == "plotID"), which(colnames(mrg_tbl) == "plotUnq"), 
-                         which(colnames(mrg_tbl) == "SRmammals") : which(colnames(mrg_tbl) == "SRallplants"))]
+##heteroptera wird hier mit zur summe gerechnet, auch wenn heteroptera nachher im 
+##Modell eventuell einzeln nicht berechnet wird, weil es zu wenige Daten gibt
+#wie folgt könnte es rausgenommen werden: 
+#alpha_tbl <- alpha_tbl[,!grepl("heteroptera", colnames(alpha_tbl))]
 
-alpha_tbl <- alpha_tbl[,!grepl("heteroptera", colnames(alpha_tbl))]
+# #mrg_tbl alpha nach trophic table zusammenzählen. 
+# alpha_tbl <- mrg_tbl[, c(which(colnames(mrg_tbl) == "plotID"), which(colnames(mrg_tbl) == "plotUnq"), 
+#                          which(colnames(mrg_tbl) == "SRmammals") : which(colnames(mrg_tbl) == "SRallplants"))]
+# 
+# alpha_tbl <- alpha_tbl[,!grepl("heteroptera", colnames(alpha_tbl))]
 
-#for (x in (colnames(alpha_tbl)[2:ncol(alpha_tbl)])){
+
 troph_pred <- lapply(colnames(alpha_tbl)[3:ncol(alpha_tbl)], function(x){
   trop <- NA
   for (i in trophic_tbl$Taxon){
@@ -71,5 +80,6 @@ for (i in levels(trophic_tbl$diet)){
 troph_sum <- troph_sum[!duplicated(troph_sum$plotID),]
 
 save(troph_sum, file = paste0(inpath, "troph_sum.RData"))
-save(troph_sum, file = paste0(inpath_general, "troph_sum.RData"))
+
+
 

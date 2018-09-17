@@ -21,8 +21,9 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-# sub <- "aug18/2018-09-01_ffs_pls_cv_noForest_alpha_all/"
-sub <- "sep18/2018-09-07_ffs_pls_cv_noForest_alpha_all_RMSE/"
+sub <- "sep18/2018-09-14_ffs_pls_cv_allplots_allalpha_RMSE_elev_dstr_elevsq_plsresid/"
+# sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE_elev_dstrb/"
+all_plts <- T#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -50,7 +51,7 @@ run_all_srt <- mixedsort(model_strsplits[grep("run", model_strsplits)])
 for (i in seq(length(outs_lst))){
   names(outs_lst)[[i]] <- run_all_srt[[i]]
 }
-all_plts <- F
+
 if (all_plts == F){
   if(length(grep("_only", sub))){
     frst <- T
@@ -66,7 +67,10 @@ if (all_plts == F){
     cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
   }
   tbl <- mrg_tbl[which(mrg_tbl$cat %in% cat),]
+}else if (all_plts == T){
+  tbl <- mrg_tbl
 }
+
 
 #####check which models were dissmissed due to errorhandling###############
 err_hnd_files <- c()
@@ -104,7 +108,7 @@ saveRDS(err_hnd_files, file = paste0(inpath, "err_handling_files.rds"))
 # ##############Number of plots with this taxa
 #i <- models[grep("_SRheteroptera", models)] #######testing
 smmry_obs <- lapply(models, function(i){
-  # print(i)
+  print(i)
   nm <- strsplit(x = i, split = "_|\\.")
   resp <- nm[[1]][length(nm[[1]])-1]####################sollte auf dauer anders (relativ) angegeben werden!
   run <- nm[[1]][length(nm[[1]])-4]
@@ -142,7 +146,7 @@ saveRDS(obs_smmry, file = paste0(inpath, "obs_smmry.rds"))
 # for (i in models){
 #pdf(file = paste0(outpath, "plot_ffs.pdf")) ###only uncomment with plot argument and dev.off argument
 prediction_rep <- lapply(models, function(i){
-  #print(i)
+  print(i)
   nm <- strsplit(x = i, split = "_|\\.")
   resp <- nm[[1]][length(nm[[1]])-1]####################sollte auf dauer anders (relativ) angegeben werden!
   run <- nm[[1]][length(nm[[1]])-4]
@@ -177,6 +181,7 @@ prediction_rep <- lapply(models, function(i){
   ###hier var imp und eventuell anderes für heatmap berechnen!
   varimp <- varImp(mod)$importance
   selvars <- mod$selectedvars
+  nmbr_selvars <- length(selvars)
   selvars_perf <- mod$selectedvars_perf
   selvars_perf_SE <- mod$selectedvars_perf_SE
   perf_all <- mod$perf_all
@@ -246,6 +251,38 @@ prediction_rep <- lapply(models, function(i){
     return(prdct_df = prdct_df)
   })
   
+#####pls cv prediction only elev and elevsq
+  pls_elevsq_cv_prdct <- lapply(seq(length(outs_lst)), function(k){
+    print(k)
+    out_plt <- outs_lst[[k]]$plotID
+    mrg_tbl$elevation_scale <- scale(mrg_tbl$elevation, center = T, scale = T)
+    mrg_tbl$elevsq_scale <- scale(mrg_tbl$elevsq, center = T, scale = T)
+    mrg_in <- mrg_tbl[-which(mrg_tbl$plotID %in% out_plt),]
+    mrg_out <- mrg_tbl[which(mrg_tbl$plotID %in% out_plt),]
+    dat <- data.frame("elevation_scale"= mrg_in$elevation_scale,
+                      "elevsq_scale" = mrg_in$elevsq_scale, 
+                      "response"= mrg_in[,grepl(paste0("^", resp, "$"), 
+                                                colnames(mrg_in))])
+    #mod_gam <- gam(response ~ s(elevation),data=dat)
+    mod_pls_cv <- plsr(response ~ (elevation_scale + elevsq_scale), data = dat)
+    newdat <- data.frame("elevation_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevation_scale"], 
+                         "elevsq_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevsq_scale"])
+    if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
+      prdct <- predict(object = mod_pls_cv, newdata =  newdat)
+    }else{
+      prdct <- NA
+    }
+    prdct_df <- data.frame(plotID = mrg_out$plotID, 
+                           plotUnq = mrg_out$plotUnq, 
+                           elevation = mrg_out$elevation,
+                           resp = mrg_out[,which(colnames(mrg_out) == resp)], 
+                           prdct= prdct)
+    # colnames(prdct_df)[which(colnames(prdct_df) == "prdct")] <- paste0(j, "_", "run_", i)
+    colnames(prdct_df) <- c("plotID", "plotUnq", "elevation", resp, paste0("prd_", resp, "_", "run_", k))
+    return(prdct_df = prdct_df)
+  })
+  
+  ###############################
   
   ###prediction of Sr and resid data
   new_df <- df_scl[which(df_scl$plotID %in% outs), ]
@@ -277,13 +314,15 @@ prediction_rep <- lapply(models, function(i){
               stats = stats, 
               varimp = varimp, 
               selvars = selvars, 
+              nmbr_selvars = nmbr_selvars, 
               selvars_perf = selvars_perf, 
               selvars_perf_SE = selvars_perf_SE, 
               perf_all = perf_all, 
               gam_prdct = gam_prdct, 
               prdct = prdct, 
               prdct_all = prdct_all, 
-              gam_cv_prdct = gam_cv_prdct
+              gam_cv_prdct = gam_cv_prdct,
+              pls_elevsq_cv_prdct = pls_elevsq_cv_prdct
               ))
 
 })
@@ -295,6 +334,7 @@ stats_lst <- do.call(rbind, prediction_rep)
 ###########################################
 stats <- data.frame()
 varimp_lst <- list()
+nmbrs_selvars_lst <- list()
 for (x in (seq(nrow(stats_lst)))){
   resp <- stats_lst[x,]$name
   respUnq <- stats_lst[x,]$nameUnq
@@ -309,16 +349,15 @@ for (x in (seq(nrow(stats_lst)))){
   stats <- rbind(stats, tmp_stats)
 
   varimp_lst[[resp]] <- varimp
-
+  nmbrs_selvars_lst[[resp]] <- stats_lst[x,]$nmbr_selvars
 }
+
+nmbrs_selvar <- as.data.frame(do.call(rbind,nmbrs_selvars_lst))
 
 saveRDS(varimp_lst, file = paste0(outpath, "varimp_lst.rds"))
 #varimp_lst <- readRDS(file = paste0(inpath, "varimp_lst.rds"))
 
-
-
-
-
+saveRDS(nmbrs_selvar, file = paste0(outpath, "nmbrs_selvar.rds"))
 
 
 #########################################
@@ -379,7 +418,6 @@ saveRDS(object = gam_prdct_df, file = paste0(outpath, "gam_prdct_df.rds"))
 # gam_prdct_df <- readRDS(paste0(outpath, "gam_prdct_df.rds"))
 
 ###gam prdct_cv df
-
 gam_cv_df_mrg_lst <- lapply(seq(nrow(stats_lst)), function(k){
   gam_cv_prdct<- stats_lst[k,]$gam_cv_prdct
   gam_cv_df_mrg <- Reduce(function(x, y) merge(x, y, by="plotUnq", all = T), gam_cv_prdct)
@@ -405,6 +443,38 @@ gam_prdct_cv_df <- gam_prdct_cv_df[,c(which(colnames(gam_prdct_cv_df) =="plotID"
                                    #which(colnames(gam_prdct_cv_df) %in% gam_rlvnt_Unq)
                                    )]
 saveRDS(object = gam_prdct_cv_df, file = paste0(outpath, "gam_prdct_cv_df.rds"))
+
+###pls_elevsq_cv_prdct dataframe
+pls_elevsq_cv_df_mrg_lst <- lapply(seq(nrow(stats_lst)), function(k){
+  pls_elevsq_cv_prdct<- stats_lst[k,]$pls_elevsq_cv_prdct
+  pls_elevsq_cv_df_mrg <- Reduce(function(x, y) merge(x, y, by="plotUnq", all = T), pls_elevsq_cv_prdct)
+  pls_elevsq_cv_df_mrg <- pls_elevsq_cv_df_mrg[, !grepl("\\.", colnames(pls_elevsq_cv_df_mrg))]
+  pls_elevsq_cv_df_mrg$plotID <- substr(pls_elevsq_cv_df_mrg$plotUnq, 1, 4)
+  return(pls_elevsq_cv_df_mrg)
+})
+
+pls_elevsq_prdct_cv_df <- Reduce(function(x, y) merge(x, y, by="plotUnq"), pls_elevsq_cv_df_mrg_lst)
+pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[, !grepl("\\.", colnames(pls_elevsq_prdct_cv_df))]
+pls_elevsq_prdct_cv_df <- data.frame(plotID = substr(pls_elevsq_prdct_cv_df$plotUnq, 1, 4), 
+                              plotUnq = pls_elevsq_prdct_cv_df$plotUnq, 
+                              #elevation = pls_elevsq_prdct_cv_df$elevation, 
+                              #pls_elevsq_prdct_cv_df[,grepl("run", colnames(pls_elevsq_prdct_cv_df))]) 
+                              pls_elevsq_prdct_cv_df[,-(which(colnames(pls_elevsq_prdct_cv_df) == "plotUnq"))])
+pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,colSums(is.na(pls_elevsq_prdct_cv_df)) < nrow(pls_elevsq_prdct_cv_df)]
+pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,-which(grepl("resid", colnames(pls_elevsq_prdct_cv_df)))]
+pls_elevsq_rlvnt <- colnames(pls_elevsq_prdct_cv_df)[grepl("run", colnames(pls_elevsq_prdct_cv_df))]
+pls_elevsq_rlvnt_Unq <- unique(substr(pls_elevsq_rlvnt, 5, nchar(pls_elevsq_rlvnt)-6))
+pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,c(which(colnames(pls_elevsq_prdct_cv_df) =="plotID"), 
+                                      which(colnames(pls_elevsq_prdct_cv_df) =="plotUnq"), 
+                                      which(grepl("run", colnames(pls_elevsq_prdct_cv_df)))#, 
+                                      #which(colnames(pls_elevsq_prdct_cv_df) %in% pls_elevsq_rlvnt_Unq)
+)]
+saveRDS(object = pls_elevsq_prdct_cv_df, file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
+
+
+
+
+
 
 ####prediction df
 prdct_df <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
