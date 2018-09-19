@@ -11,8 +11,8 @@ library(scales)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 # sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE/"
-sub <- "sep18/2018-09-14_ffs_pls_cv_onlyForest_alpha_exmples_RMSE_elev_dstrb_elevsq_plsresid/"
-all_plts <- F
+sub <- "sep18/2018-09-18_ffs_pls_cv_allplots_moths_RMSE_elev_dstrb_elevsq_plsresid/"
+all_plts <- T
 inpath_general <- "../data/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)

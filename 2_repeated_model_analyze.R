@@ -21,7 +21,7 @@ library(CAST)
 library(mgcv)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "sep18/2018-09-14_ffs_pls_cv_allplots_allalpha_RMSE_elev_dstr_elevsq_plsresid/"
+sub <- "sep18/2018-09-18_ffs_pls_cv_allplots_moths_RMSE_elev_dstrb_elevsq_plsresid/"
 # sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE_elev_dstrb/"
 all_plts <- T#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
@@ -264,7 +264,9 @@ prediction_rep <- lapply(models, function(i){
                       "response"= mrg_in[,grepl(paste0("^", resp, "$"), 
                                                 colnames(mrg_in))])
     #mod_gam <- gam(response ~ s(elevation),data=dat)
+    
     mod_pls_cv <- plsr(response ~ (elevation_scale + elevsq_scale), data = dat)
+    #saveRDS(mod_pls_cv, file = paste0(outpath, "pls_cv_mod_", resp, "_", run, ".rds"))
     newdat <- data.frame("elevation_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevation_scale"], 
                          "elevsq_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevsq_scale"])
     if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
@@ -272,6 +274,7 @@ prediction_rep <- lapply(models, function(i){
     }else{
       prdct <- NA
     }
+    ################################################################################################hier werden 2 ncomps in datenframe geschrieben
     prdct_df <- data.frame(plotID = mrg_out$plotID, 
                            plotUnq = mrg_out$plotUnq, 
                            elevation = mrg_out$elevation,

@@ -165,118 +165,119 @@ registerDoParallel(cl)
 
 # model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
 model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRorthoptera", "SRmoths", "sum_herbivore_N3", 
-                                                                      "residSRorthoptera", "residSRmoths", "residsum_herbivore_N3"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-                                                                        # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-                                                                        # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
-                                                                        #                     "tuneLength", "modDir", "type", "i"))
-                                                                        # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-                                                                        #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-                                                                        #model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-                                                                        #model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-                                                                        ########################################################################################
-                                                                        ###create and filter dataframe with all predictors and one response
-                                                                        ########################################################################################
-                                                                        df_scl <- cbind(df_meta, df_resp[,c(which(colnames(df_resp) == i))], df_scl_pred)
-                                                                        colnames(df_scl)[grepl("df_resp",colnames(df_scl))] <- i
-                                                                        df_scl <- Filter(function(x)(length(unique(x))>1), df_scl)
-                                                                        df_scl <- df_scl[complete.cases(df_scl),]
-                                                                        save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
-                                                                        
-                                                                        ###check outs list
-                                                                        outs_lst <- lapply(ind_nums, function(k){
-                                                                          out_sel <- df_scl[which(df_scl$selID == k),]
-                                                                          miss <- cats[!(cats %in% out_sel$cat)]
-                                                                          df_miss <- df_scl[df_scl$cat %in% as.vector(miss),]
-                                                                          set.seed(k)
-                                                                          out_miss <- ddply(df_miss, .(cat), function(x){
-                                                                            x[sample(nrow(x), 1), ]
-                                                                          })
-                                                                          out <- rbind(out_sel, out_miss)
-                                                                        })
-                                                                        save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
-                                                                        
-                                                                        
-                                                                        
-                                                                        for (j in seq(ind_nums)){
-                                                                          print(j)
-                                                                          # #if some plot in outs_lst is now filtered, fill void with other plot of 
-                                                                          # #that landuse by chance (problem with toolittle plot subset (eg. only forest))
-                                                                          # for(k in seq(nrow(outs_lst[[j]]))){
-                                                                          #   if(!(outs_lst[[j]]$plotID[[k]] %in% df_scl$plotID)){
-                                                                          #     df_miss <- df_scl[df_scl$cat %in% as.vector(outs_lst[[j]]$cat[[k]]),c(1:3)]
-                                                                          #     set.seed(k)
-                                                                          #     outs_lst[[j]][k,] <- ddply(df_miss, .(cat), function(x){
-                                                                          #       x[sample(nrow(x), 1), ]
-                                                                          #     })
-                                                                          #   }
-                                                                          # }
-                                                                          # save(outs_lst, file = paste0(modDir, "/outs_lst_", i, ".RData"))
-                                                                          
-                                                                          
-                                                                          df_test <- df_scl[which(df_scl$plotID %in% outs_lst[[j]]$plotID),]
-                                                                          df_train <- df_scl[!(df_scl$plotID %in% df_test$plotID),]
-                                                                          
-                                                                          resp <- df_train[,which(colnames(df_train) == i)]
-                                                                          pred <- df_train[,c(which(colnames(df_train) %in% nm_pred))]
-                                                                          
-                                                                          ################
-                                                                          ################
-                                                                          ################
-                                                                          # df_test$selID
-                                                                          cvind_num <- unique(sort(df_train$selID))
-                                                                          cvouts_lst <- lapply(cvind_num, function(k){
-                                                                            out_sel <- df_train[which(df_train$selID == k),]
-                                                                            miss <- cats[!(cats %in% out_sel$cat)]
-                                                                            df_miss <- df_train[df_train$cat %in% as.vector(miss),]
-                                                                            set.seed(k)
-                                                                            out_miss <- ddply(df_miss, .(cat), function(x){
-                                                                              x[sample(nrow(x), 1), ]
-                                                                            })
-                                                                            out <- rbind(out_sel, out_miss)
-                                                                          })
-                                                                          ################
-                                                                          ################
-                                                                          ################
-                                                                          
-                                                                          
-                                                                          
-                                                                          
-                                                                          cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
-                                                                            out_res <- as.integer(rownames(cvouts_lst[[i]]))
-                                                                          })
-                                                                          
-                                                                          cvIndex <- lapply(cvouts_lst, function(i){
-                                                                            res <- which(!(df_train$plotID %in% i$plotID))
-                                                                          })
-                                                                          
-                                                                          
-                                                                          if (type == "rfe"){
-                                                                            mod <- rfe(pred, resp, method = method,
-                                                                                       rfeControl = rfe_cntrl, tuneLength = tuneLength)
-                                                                          }else if (type == "ffs"){
-                                                                            mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), 
-                                                                                       metric = "RMSE", trControl = trainControl(index = cvIndex, 
-                                                                                                                                 allowParallel = F)) ##########PLATZHALTER###########))
-                                                                          }
-                                                                          # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
-                                                                          # trControl = trainControl(index = cvIndex, allowParallel = F))
-                                                                          nm <- gsub("_", "", i)
-                                                                          # nm_lst <- strsplit(x = i, split = "_")
-                                                                          # if (grepl("NMDS", nm_lst[[1]][3])){
-                                                                          #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2], nm_lst[[1]][3])
-                                                                          # } else{
-                                                                          #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
-                                                                          # }
-                                                                          # save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
-                                                                          #                         nm, ".RData"))
-                                                                          save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
-                                                                                                  nm, ".RData"))
-                                                                          print(paste0("DONE: ", modDir, "model", type, "_", method, "_", 
-                                                                                       i, "___________run", j))
-                                                                          
-                                                                        }
-                                                                        
-                                                                      }
+                                                                      "residSRorthoptera", "residSRmoths", "residsum_herbivore_N3"))], 
+                 .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+                   # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+                   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
+                   #                     "tuneLength", "modDir", "type", "i"))
+                   # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+                   #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+                   #model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+                   #model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
+                   ########################################################################################
+                   ###create and filter dataframe with all predictors and one response
+                   ########################################################################################
+                   df_scl <- cbind(df_meta, df_resp[,c(which(colnames(df_resp) == i))], df_scl_pred)
+                   colnames(df_scl)[grepl("df_resp",colnames(df_scl))] <- i
+                   df_scl <- Filter(function(x)(length(unique(x))>1), df_scl)
+                   df_scl <- df_scl[complete.cases(df_scl),]
+                   save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
+                   
+                   ###check outs list
+                   outs_lst <- lapply(ind_nums, function(k){
+                     out_sel <- df_scl[which(df_scl$selID == k),]
+                     miss <- cats[!(cats %in% out_sel$cat)]
+                     df_miss <- df_scl[df_scl$cat %in% as.vector(miss),]
+                     set.seed(k)
+                     out_miss <- ddply(df_miss, .(cat), function(x){
+                       x[sample(nrow(x), 1), ]
+                     })
+                     out <- rbind(out_sel, out_miss)
+                   })
+                   save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
+                   
+                   
+                   
+                   for (j in seq(ind_nums)){
+                     print(j)
+                     # #if some plot in outs_lst is now filtered, fill void with other plot of 
+                     # #that landuse by chance (problem with toolittle plot subset (eg. only forest))
+                     # for(k in seq(nrow(outs_lst[[j]]))){
+                     #   if(!(outs_lst[[j]]$plotID[[k]] %in% df_scl$plotID)){
+                     #     df_miss <- df_scl[df_scl$cat %in% as.vector(outs_lst[[j]]$cat[[k]]),c(1:3)]
+                     #     set.seed(k)
+                     #     outs_lst[[j]][k,] <- ddply(df_miss, .(cat), function(x){
+                     #       x[sample(nrow(x), 1), ]
+                     #     })
+                     #   }
+                     # }
+                     # save(outs_lst, file = paste0(modDir, "/outs_lst_", i, ".RData"))
+                     
+                     
+                     df_test <- df_scl[which(df_scl$plotID %in% outs_lst[[j]]$plotID),]
+                     df_train <- df_scl[!(df_scl$plotID %in% df_test$plotID),]
+                     
+                     resp <- df_train[,which(colnames(df_train) == i)]
+                     pred <- df_train[,c(which(colnames(df_train) %in% nm_pred))]
+                     
+                     ################
+                     ################
+                     ################
+                     # df_test$selID
+                     cvind_num <- unique(sort(df_train$selID))
+                     cvouts_lst <- lapply(cvind_num, function(k){
+                       out_sel <- df_train[which(df_train$selID == k),]
+                       miss <- cats[!(cats %in% out_sel$cat)]
+                       df_miss <- df_train[df_train$cat %in% as.vector(miss),]
+                       set.seed(k)
+                       out_miss <- ddply(df_miss, .(cat), function(x){
+                         x[sample(nrow(x), 1), ]
+                       })
+                       out <- rbind(out_sel, out_miss)
+                     })
+                     ################
+                     ################
+                     ################
+                     
+                     
+                     
+                     
+                     cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
+                       out_res <- as.integer(rownames(cvouts_lst[[i]]))
+                     })
+                     
+                     cvIndex <- lapply(cvouts_lst, function(i){
+                       res <- which(!(df_train$plotID %in% i$plotID))
+                     })
+                     
+                     
+                     if (type == "rfe"){
+                       mod <- rfe(pred, resp, method = method,
+                                  rfeControl = rfe_cntrl, tuneLength = tuneLength)
+                     }else if (type == "ffs"){
+                       mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), 
+                                  metric = "RMSE", trControl = trainControl(index = cvIndex, 
+                                                                            allowParallel = F)) ##########PLATZHALTER###########))
+                     }
+                     # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
+                     # trControl = trainControl(index = cvIndex, allowParallel = F))
+                     nm <- gsub("_", "", i)
+                     # nm_lst <- strsplit(x = i, split = "_")
+                     # if (grepl("NMDS", nm_lst[[1]][3])){
+                     #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2], nm_lst[[1]][3])
+                     # } else{
+                     #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
+                     # }
+                     # save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
+                     #                         nm, ".RData"))
+                     save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
+                                             nm, ".RData"))
+                     print(paste0("DONE: ", modDir, "model", type, "_", method, "_", 
+                                  i, "___________run", j))
+                     
+                   }
+                   
+                 }
 
 
 # for (i in colnames(df_resp)){ ####problem mit heteroptera

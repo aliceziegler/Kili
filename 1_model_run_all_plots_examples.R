@@ -1,7 +1,7 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-02-09 15:05:58
-###to do: subdir ist bedingt durch moddir weiter unten...unschön
+###to do: subdir ist bedingt durch moddir weiter unten...unschÃ¶n
 rm(list=ls())
 
 ########################################################################################
@@ -14,7 +14,7 @@ library(doParallel)
 library(foreach)
 library(parallel)
 library(plyr)
-#setwd for folder with THIS script (only possible within Rstudio)
+# setwd for folder with THIS script (only possible within Rstudio)
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 # setwd("/media/memory02/users/aziegler/src")
 sub <- "sep18/"
@@ -37,7 +37,7 @@ tbl_rw <- get(load(paste0(inpath, tbl_nm)))
 
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
               which(colnames(tbl_rw) %in% "dstrb"),
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residsum_plant_N9"),
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "sum_plant_N9"),
               which(colnames(tbl_rw) %in% "plotUnq"), 
               which(colnames(tbl_rw) %in% "AGB"), 
               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "BE_PR_55"), 
@@ -50,19 +50,16 @@ tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in
               which(colnames(tbl_rw) %in% "sd_rtrn_1"),
               which(colnames(tbl_rw) %in% "gap_frac"))
 ###
-# tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelöst werden 
+# tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelÃ¶st werden 
 ###
 tbl <- tbl_rw[,tbl_cols]
 #saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
-                           seq(grep("^SRotheraculeata$", names(tbl)), grep("^SRsnails$", names(tbl))),
                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
-                           seq(grep("residSRotheraculeata", names(tbl)), grep("residSRsnails", names(tbl))),
-                           seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
-                           seq(grep("^sum_generalist_N3", names(tbl)), grep("residsum_plant_N9", names(tbl))))]
+                           seq(grep("residSRrosids", names(tbl)), grep("^sum_plant_N9", names(tbl))))]
 # nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
 #                              grep("sum_bats_N1", names(tbl)))]
 ###choose if elevation and dstrb is used or not
@@ -85,7 +82,7 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_noForest_allalpha_RMSE_elev_dstrb_elevsq_plsresid"
+comm <- "_cv_allplots_moths_RMSE_elev_dstrb_elevsq_plsresid"
 ind_nums <- sort(unique(tbl$selID))
 ind_nums <- ind_nums[ind_nums>0]
 all_plts <- T
@@ -141,8 +138,8 @@ scl_lst <- lapply(df_pred, function(i){
 df_scl_pred <- do.call(data.frame, scl_lst)
 
 ########################################################################################
-###resampling by group = Für jede Landnutzungsform einen Plot je Durchlauf raus
-###nehmen (nach Plotnummer, restliche zufällig)
+###resampling by group = FÃ¼r jede Landnutzungsform einen Plot je Durchlauf raus
+###nehmen (nach Plotnummer, restliche zufÃ¤llig)
 ########################################################################################
 # outs_lst <- lapply(seq(ind_num), function(k){
 #   out_sel <- df_meta[which(df_meta$selID == k),]
@@ -156,13 +153,17 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 18
+cl <- 2
 registerDoParallel(cl)
 
 
-model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-  #model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRorthoptera", "SRmoths", "sum_herbivore_N3", 
-  # "residSRorthoptera", "residSRmoths", "residsum_herbivore_N3"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+#model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp)
+                 [which(colnames(df_resp) %in% c("SRmoths", 
+                                                 "residSRmoths"))], 
+                 .errorhandling = "remove", .packages=c("caret", 
+                                                        "CAST", 
+                                                        "plyr"))%dopar%{ ###all
   # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
@@ -178,6 +179,7 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
   df_scl <- Filter(function(x)(length(unique(x))>1), df_scl)
   df_scl <- df_scl[complete.cases(df_scl),]
   save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
+  
   
   ###check outs list
   outs_lst <- lapply(ind_nums, function(k){
@@ -238,7 +240,7 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
     
     
     
-    cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
+    cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie Ã¼bergeben
       out_res <- as.integer(rownames(cvouts_lst[[i]]))
     })
     
@@ -254,8 +256,7 @@ model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("
       mod <- ffs(pred, resp, method = method, 
                  tuneGrid = expand.grid(ncomp = c(1:5, 10, 15, 20, 25, 30, 34)),
                  #tuneGrid = expand.grid(ncomp = 1), 
-                 metric = "RMSE", trControl = trainControl(index = cvIndex)) 
-
+                 metric = "RMSE", trControl = trainControl(index = cvIndex))
     }
     # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
     # trControl = trainControl(index = cvIndex, allowParallel = F))

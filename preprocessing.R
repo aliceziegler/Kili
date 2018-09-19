@@ -13,7 +13,7 @@ rm(list=ls())
 #Packages: 
 # library(rPointDB)
 # library(plyr)
-
+###trophsum integrieren
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 sub <- "sep18/"
