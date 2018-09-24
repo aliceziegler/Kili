@@ -33,11 +33,12 @@ tbl_nm <- "dat_ldr_mrg.RData"
 ###choose relevant columns
 tbl_rw <- get(load(paste0(inpath, tbl_nm)))
 
+
 #tbl_rw$dstrb <- as.logical(tbl_rw$dstrb)
 
 tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
               which(colnames(tbl_rw) %in% "dstrb"),
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "sum_plant_N9"),
+              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "residsum_plant_N9"),
               which(colnames(tbl_rw) %in% "plotUnq"), 
               which(colnames(tbl_rw) %in% "AGB"), 
               which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "BE_PR_55"), 
@@ -57,18 +58,19 @@ tbl <- tbl_rw[,tbl_cols]
 
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
+                           seq(grep("^SRotheraculeata$", names(tbl)), grep("^SRsnails$", names(tbl))),
                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
+                           seq(grep("residSRotheraculeata", names(tbl)), grep("residSRsnails", names(tbl))),
                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
-                           seq(grep("residsum_generalist_N3", names(tbl)), grep("^sum_plant_N9", names(tbl))))]
+                           seq(grep("^sum_generalist_N3", names(tbl)), grep("residsum_plant_N9", names(tbl))))]
 # nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
 #                              grep("sum_bats_N1", names(tbl)))]
 ###choose if elevation and dstrb is used or not
 nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
                                grep("gap_frac", names(tbl))), 
                            grep("elevation", names(tbl)), 
-                           grep("dstrb", names(tbl)), 
-                           grep("elevsq", names(tbl)))]
+                           grep("dstrb", names(tbl)))]
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 ###selectors
 tbl$selID <- as.integer(substr(tbl$plotID, 4, 4))
@@ -83,7 +85,7 @@ sizes <- seq(2, length(nm_pred), 10)
 rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "_cv_allplots_only_moths_RMSE_elev_dstrb_elevsq_plsresid"
+comm <- "_cv_all_plots_alpha_all_RMSE_elev_dstrb"
 ind_nums <- sort(unique(tbl$selID))
 ind_nums <- ind_nums[ind_nums>0]
 all_plts <- T
@@ -154,13 +156,13 @@ df_scl_pred <- do.call(data.frame, scl_lst)
 # })
 # save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 18
+cl <- 1
 registerDoParallel(cl)
 
 
-#model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRmoths", "residSRmoths"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-  # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
+# model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRorthoptera", "SRmoths", "sum_herbivore_N3"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
+   # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
   #                     "tuneLength", "modDir", "type", "i"))
   # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
@@ -218,7 +220,6 @@ model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRmoths",
     ################
     # df_test$selID
     cvind_num <- unique(sort(df_train$selID))
-    cvind_num <- cvind_num[which(cvind_num >0)]
     cvouts_lst <- lapply(cvind_num, function(k){
       out_sel <- df_train[which(df_train$selID == k),]
       miss <- cats[!(cats %in% out_sel$cat)]
@@ -234,6 +235,8 @@ model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRmoths",
     ################
     
     
+    
+    
     cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
       out_res <- as.integer(rownames(cvouts_lst[[i]]))
     })
@@ -247,11 +250,9 @@ model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRmoths",
       mod <- rfe(pred, resp, method = method,
                  rfeControl = rfe_cntrl, tuneLength = tuneLength)
     }else if (type == "ffs"){
-      mod <- ffs(pred, resp, method = method, 
-                 tuneGrid = expand.grid(ncomp = c(1:5, 10, 15, 20, 25, 30, 34)),
-                 #tuneGrid = expand.grid(ncomp = 1), 
-                 metric = "RMSE", trControl = trainControl(index = cvIndex)) 
-      
+      mod <- ffs(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1), 
+                 metric = "RMSE", trControl = trainControl(index = cvIndex, 
+                                          allowParallel = F)) ##########PLATZHALTER###########))
     }
     # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
     # trControl = trainControl(index = cvIndex, allowParallel = F))

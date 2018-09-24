@@ -19,9 +19,10 @@ library(plyr)
 library(dplyr)
 library(CAST)
 library(mgcv)
+
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "sep18/2018-09-18_ffs_pls_cv_allplots_moths_RMSE_elev_dstrb_elevsq_plsresid/"
+sub <- "sep18/2018-09-14_ffs_pls_cv_allplots_allalpha_RMSE_elev_dstr_elevsq_plsresid/"
 # sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE_elev_dstrb/"
 all_plts <- T#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
@@ -42,6 +43,9 @@ nm_resp <- gsub("resid_", "resid", nm_resp)
 ########################################################################################
 dfs <- list.files(path = inpath, pattern = glob2rx("df_scl*"), full.names = F)
 models <- list.files(path = inpath, pattern = glob2rx("indv_model*"), full.names = TRUE)
+
+mrg_tbl$selID <- as.numeric(substr(mrg_tbl$plotID, 4, 4))
+cats <- unique(mrg_tbl$cats)
 
 run_all <- c()
 #run_all
@@ -257,20 +261,44 @@ prediction_rep <- lapply(models, function(i){
     out_plt <- outs_lst[[k]]$plotID
     mrg_tbl$elevation_scale <- scale(mrg_tbl$elevation, center = T, scale = T)
     mrg_tbl$elevsq_scale <- scale(mrg_tbl$elevsq, center = T, scale = T)
+    
     mrg_in <- mrg_tbl[-which(mrg_tbl$plotID %in% out_plt),]
     mrg_out <- mrg_tbl[which(mrg_tbl$plotID %in% out_plt),]
-    dat <- data.frame("elevation_scale"= mrg_in$elevation_scale,
-                      "elevsq_scale" = mrg_in$elevsq_scale, 
-                      "response"= mrg_in[,grepl(paste0("^", resp, "$"), 
-                                                colnames(mrg_in))])
-    #mod_gam <- gam(response ~ s(elevation),data=dat)
     
-    mod_pls_cv <- plsr(response ~ (elevation_scale + elevsq_scale), data = dat)
+    cvind_num <- unique(sort(mrg_in$selID))
+    cvind_num <- cvind_num[which(cvind_num >0)]
+    cvouts_lst <- lapply(cvind_num, function(k){
+      out_sel <- mrg_in[which(mrg_in$selID == k),]
+      miss <- cats[!(cats %in% out_sel$cat)]
+      df_miss <- mrg_in[mrg_in$cat %in% as.vector(miss),]
+      set.seed(k)
+      out_miss <- ddply(df_miss, .(cat), function(x){
+        x[sample(nrow(x), 1), ]
+      })
+      out <- rbind(out_sel, out_miss)
+    })
+    cvIndex <- lapply(cvouts_lst, function(i){
+      res <- which(!(mrg_in$plotID %in% i$plotID))
+    })
+    
+    dat <- data.frame("elevation_scale"= mrg_in$elevation_scale,
+                      "elevsq_scale" = mrg_in$elevsq_scale,
+                      "response"= mrg_in[,grepl(paste0("^", resp, "$"),
+                                                colnames(mrg_in))])
+    
+    pred_pls <- data.frame(elevation_scale = dat$elevation_scale, 
+                           elevsq_scale = dat$elevsq_scale)
+    resp_pls <- dat$response
+    mod_pls_trn <- train(x = pred_pls, y = resp_pls, method = "pls", 
+                         tuneGrid = expand.grid(ncomp = c(1,2)), 
+                         trControl = trainControl(method = "cv", index = cvIndex))  
+    
+    #mod_pls_cv <- plsr(response ~ (elevation_scale + elevsq_scale), data = dat)
     #saveRDS(mod_pls_cv, file = paste0(outpath, "pls_cv_mod_", resp, "_", run, ".rds"))
-    newdat <- data.frame("elevation_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevation_scale"], 
-                         "elevsq_scale" = mrg_tbl[which(mrg_tbl$plotID %in% out_plt),"elevsq_scale"])
+    newdat <- data.frame("elevation_scale" = mrg_out$elevation_scale,
+                         "elevsq_scale" = mrg_out$elevsq_scale)
     if ((grepl("resid", resp) | grepl("NMDS", resp)) == F){
-      prdct <- predict(object = mod_pls_cv, newdata =  newdat)
+      prdct <- predict(object = mod_pls_trn, newdata = newdat)
     }else{
       prdct <- NA
     }

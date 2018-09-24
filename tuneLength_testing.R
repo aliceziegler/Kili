@@ -185,6 +185,7 @@ for (i in c("residSRbirds", "residSRsnails", "SRsnails", "SRferns", "SRbirds",
    
     #set indices for cv in ffs 
     cvind_num <- unique(df_scl$selID)
+    cvind_num <- cvind_num[which(cvind_num >0)]
     cvouts_lst <- lapply(cvind_num, function(k){
       out_sel <- df_scl[which(df_scl$selID == k),]
       miss <- cats[!(cats %in% out_sel$cat)]
