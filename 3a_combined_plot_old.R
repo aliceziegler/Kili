@@ -44,11 +44,11 @@ resp_vec <- colnames(mrg_tbl)[c(which(colnames(mrg_tbl) == "SRmammals") :
 
 
 ##read data
-# gam_resid <- readRDS(file = paste0(outpath, "gam_resid.rds"))
-# gam_prdct_cv_df <- readRDS(file = paste0(outpath, "gam_prdct_cv_df.rds"))
-# gam_prdct_df <- readRDS(paste0(outpath, "gam_prdct_df.rds"))
+gam_resid <- readRDS(file = paste0(outpath, "gam_resid.rds"))
+gam_prdct_cv_df <- readRDS(file = paste0(outpath, "gam_prdct_cv_df.rds"))
+gam_prdct_df <- readRDS(paste0(outpath, "gam_prdct_df.rds"))
 prdct_df <- readRDS(file = paste0(outpath, "prdct_df.rds"))
-# prdct_df_all <- readRDS(file = paste0(outpath, "prdct_df_all.rds"))
+prdct_df_all <- readRDS(file = paste0(outpath, "prdct_df_all.rds"))
 trophic_tbl <- get(load(paste0(inpath_general, "trophic_tbl.RData")))
 pls_elevsq_prdct_cv_df <- readRDS(file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
 
@@ -72,28 +72,28 @@ stats_all_lst <- lapply(resp_vec, function(resp){
   pls_residresp <- prdct_df[,c(which(colnames(prdct_df) %in% c("plotID", "plotUnq")), 
                                 which(grepl(paste0("resid", resp), colnames(prdct_df))))]
   
-  # ## pls SR all (no cv) but only non-forest
-  # pls_SRresp_all <- prdct_df_all[,c(which(colnames(prdct_df_all) %in% c("plotID", "plotUnq")),
-  #                                    which(grepl(paste0("^", resp), colnames(prdct_df_all))))]
-  # 
-  # ## pls resid all (no_cv) - but only non-forest
-  # pls_residresp_all <- prdct_df_all[,c(which(colnames(prdct_df_all) %in% c("plotID", "plotUnq")),
-  #                                       which(grepl(paste0("resid", resp), colnames(prdct_df_all))))]
-  # ##gam cv 
-  # gam_cv_SRresp <- gam_prdct_cv_df[, c(which(colnames(gam_prdct_cv_df) %in% c("plotID", "plotUnq")), 
-  #                                       which(grepl(resp, colnames(gam_prdct_cv_df))))]
-  # 
+  ## pls SR all (no cv) but only non-forest
+  pls_SRresp_all <- prdct_df_all[,c(which(colnames(prdct_df_all) %in% c("plotID", "plotUnq")),
+                                     which(grepl(paste0("^", resp), colnames(prdct_df_all))))]
+
+  ## pls resid all (no_cv) - but only non-forest
+  pls_residresp_all <- prdct_df_all[,c(which(colnames(prdct_df_all) %in% c("plotID", "plotUnq")),
+                                        which(grepl(paste0("resid", resp), colnames(prdct_df_all))))]
+  ##gam cv 
+  gam_cv_SRresp <- gam_prdct_cv_df[, c(which(colnames(gam_prdct_cv_df) %in% c("plotID", "plotUnq")), 
+                                        which(grepl(resp, colnames(gam_prdct_cv_df))))]
+  
   ##pls_elevsq cv
   pls_elevsq_cv_SRresp <- pls_elevsq_prdct_cv_df[, c(which(colnames(pls_elevsq_prdct_cv_df) %in% c("plotID", "plotUnq")), 
                                                      which(grepl(resp, colnames(pls_elevsq_prdct_cv_df))))]
   
-  # ##gam SR
-  # gam_SRresp <- gam_prdct_df[,c(which(colnames(gam_prdct_df) %in% c("plotID", "plotUnq")), 
-  #                                which(grepl(resp, colnames(gam_prdct_df))))]
-  # 
-  # ## gam + resid
-  # gam_resid_resp <- gam_resid[,c(which(colnames(gam_resid) %in% c("plotID", "plotUnq")), 
-  #                                 which(grepl(resp, colnames(gam_resid))))]
+  ##gam SR
+  gam_SRresp <- gam_prdct_df[,c(which(colnames(gam_prdct_df) %in% c("plotID", "plotUnq")), 
+                                 which(grepl(resp, colnames(gam_prdct_df))))]
+  
+  ## gam + resid
+  gam_resid_resp <- gam_resid[,c(which(colnames(gam_resid) %in% c("plotID", "plotUnq")), 
+                                  which(grepl(resp, colnames(gam_resid))))]
   
   ##mean N SR - only calculated from frst/nnon-frst plots
   mn_N_SR <- obs_smmry[which(rownames(obs_smmry) == resp),"meanN_perplot"] 

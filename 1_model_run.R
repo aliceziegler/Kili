@@ -1,7 +1,11 @@
 # Description: 
 # Author: Alice Ziegler
 # Date: 2018-02-09 15:05:58
-###to do: subdir ist bedingt durch moddir weiter unten...unschön
+###to do: tbl_scal beinhaltet nur skalierte Werte der tatsächichen prediktoren, der Rest wir 
+### unskaliert weitergezogen! Das ist unschön und fehleranfällig, falls versehentlich mal 
+### ein nicht geplanter predictor ins Modell kommt. Aber: Ich möchte nicht oben schon einen 
+### zweiten aussortierten df erstellen und weil in Spalten wie selID auch Zahlen stehen können 
+### nicht einfach alle Zahlen skaliert werden!
 rm(list=ls())
 
 ########################################################################################
@@ -25,79 +29,47 @@ outpath <- paste0("../data/", sub)
 ########################################################################################
 ###Settings
 ########################################################################################
+###DOCUMENTATION options
+#comment for explenatory filename
+comm <- "_cv_allplots_allalpha_RMSE_elev_dstrb_elevsq_plsresid_cv50"
+all_plts <- T
+frst <- F # set true if model should only be done for forested plots
+
 ###
 #DATAFRAME manipulation
 ###
 ###choose dataframe and load dataframe
 tbl_nm <- "dat_ldr_mrg.RData"
-###choose relevant columns
-tbl_rw <- get(load(paste0(inpath, tbl_nm)))
 
-#tbl_rw$dstrb <- as.logical(tbl_rw$dstrb)
+tbl <- get(load(paste0(inpath, tbl_nm)))
 
-tbl_cols <- c(which(colnames(tbl_rw) %in% "plotID") : which(colnames(tbl_rw) %in% "lat"), 
-              which(colnames(tbl_rw) %in% "dstrb"),
-              which(colnames(tbl_rw) %in% "SRmammals") : which(colnames(tbl_rw) %in% "sum_plant_N9"),
-              which(colnames(tbl_rw) %in% "plotUnq"), 
-              which(colnames(tbl_rw) %in% "AGB"), 
-              which(colnames(tbl_rw) %in% "BE_FHD") : which(colnames(tbl_rw) %in% "BE_PR_55"), 
-              which(colnames(tbl_rw) %in% "BE_PR_REG") : which(colnames(tbl_rw) %in% "LAI"), 
-              which(colnames(tbl_rw) %in% "chm_surface_ratio"), 
-              which(colnames(tbl_rw) %in% "pulse_returns_max") : which(colnames(tbl_rw) %in% "pulse_returns_mean"), 
-              which(colnames(tbl_rw) %in% "pulse_returns_sd"), 
-              which(colnames(tbl_rw) %in% "vegetation_coverage_01m") : which(colnames(tbl_rw) %in% "vegetation_coverage_10m"), 
-              which(colnames(tbl_rw) %in% "mdn_rtrn"), 
-              which(colnames(tbl_rw) %in% "sd_rtrn_1"),
-              which(colnames(tbl_rw) %in% "gap_frac"))
+###crop table to clumns that could at all be relavant
+tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") : which(colnames(dat_ldr_mrg) == "lat"), 
+                      which(colnames(dat_ldr_mrg) == "dstrb"), 
+                      which(colnames(dat_ldr_mrg) == "SRmammals") : which(colnames(dat_ldr_mrg) == "sum_bats_N1"), 
+                      which(colnames(dat_ldr_mrg) == "plotUnq"), 
+                      which(colnames(dat_ldr_mrg) == "AGB"), 
+                      which(colnames(dat_ldr_mrg) == "BE_FHD") : which(colnames(dat_ldr_mrg) == "BE_PR_55"), 
+                      which(colnames(dat_ldr_mrg) == "BE_PR_REG") : which(colnames(dat_ldr_mrg) == "LAI"), 
+                      which(colnames(dat_ldr_mrg) == "chm_surface_ratio"), 
+                      which(colnames(dat_ldr_mrg) == "pulse_returns_max") : which(colnames(dat_ldr_mrg) == "pulse_returns_mean"), 
+                      which(colnames(dat_ldr_mrg) == "pulse_returns_sd"), 
+                      which(colnames(dat_ldr_mrg) == "vegetation_coverage_01m") : which(colnames(dat_ldr_mrg) == "vegetation_coverage_10m"), 
+                      which(colnames(dat_ldr_mrg) == "mdn_rtrn"), 
+                      which(colnames(dat_ldr_mrg) == "sd_rtrn_1"),
+                      which(colnames(dat_ldr_mrg) == "gap_frac"))]
+
+##add some columns that are needed later
+tbl$selID <- as.numeric(substr(as.character(tbl$plotID), 4, 4))
+cats <- unique(tbl$cat)
 ###
-# tbl_rw <- tbl_rw[which(duplicated(tbl_rw$plotID) == F),] ##################dauerhaft sollte das anders gelöst werden 
-###
-tbl <- tbl_rw[,tbl_cols]
-#saveRDS(tbl, file = paste0(outpath, "mrg_tbl_relevant_cols.RDS"))
 
-#^ and $ means only to look for this expression and not for resid_SRmammals
-nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
-                           seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
-                           seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
-                           seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
-                           seq(grep("residsum_generalist_N3", names(tbl)), grep("^sum_plant_N9", names(tbl))))]
-# nm_resp <- colnames(tbl)[seq(grep("^SRmammals$", names(tbl)), 
-#                              grep("sum_bats_N1", names(tbl)))]
-###choose if elevation and dstrb is used or not
-nm_pred <- colnames(tbl)[c(seq(grep("AGB", names(tbl)),
-                               grep("gap_frac", names(tbl))), 
-                           grep("elevation", names(tbl)), 
-                           grep("dstrb", names(tbl)), 
-                           grep("elevsq", names(tbl)))]
-nm_meta <- c("plotID", "selID", "cat", "plotUnq")
-###selectors
-tbl$selID <- as.integer(substr(tbl$plotID, 4, 4))
+########################################data.frame tbl wird hier tatsächlich zugeschnitten. 
+### weil sonst scaling ein Problem ist. Man will ja schließlich nur über die Wald/nichtwald 
+### plots scalen. Und nicht über alle!
+###Außerdem ist das rausschmeißen wenn 50% der Daten gleich sind auch nur auf dem tatsächlich 
+### ins Modell eingehenden Datensatz sinnvoll
 
-###
-#MODEL CONTROL 
-###
-type <- "ffs"
-method <- "pls" # or other caret methods
-tuneLength = 10
-sizes <- seq(2, length(nm_pred), 10)
-rfe_cntrl <- rfeControl(functions = caretFuncs, method = "LOOCV")
-###DOCUMENTATION options
-#comment for explenatory filename
-comm <- "_cv_allplots_only_moths_RMSE_elev_dstrb_elevsq_plsresid"
-ind_nums <- sort(unique(tbl$selID))
-ind_nums <- ind_nums[ind_nums>0]
-all_plts <- T
-frst <- F # set true if model should only be done for forested plots
-
-modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
-if (file.exists(modDir)==F){
-  dir.create(file.path(modDir))
-}
-#modDir <- "../data/mar18_50m_resid_nrmlz/2018-02-28_ffs_pls"
-########################################################################################
-###Do it (Don't change anything past this point except you know what you are doing!)
-########################################################################################
-#choose which plots are beeing used and delete responses, that have less that have values for less 15 plots #########verbessern: relativ gestalten und dann f?r alle nicht nur forest
 if (all_plts == F){
   if (frst == T){
     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
@@ -105,219 +77,173 @@ if (all_plts == F){
     cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
-  #tbl <- tbl[which(tbl$cat %in% cat),which(colSums(is.na(tbl)) < 15)]
 }
 
-# choose which columns are beeing used for training, testing, val
-df_pred_all <- tbl[, c(which(colnames(tbl) %in% nm_pred))]
-## remove all variables where 90% of the entries are the same 
-## (mostly 0 for lidar variables in heights where most plots dont have any points)
-df_pred <- df_pred_all
-for (i in colnames(df_pred_all)){
-  frq <- table(df_pred_all[i])
-  if (max(frq) > floor(nrow(df_pred_all) * 0.5)){
-    df_pred <- df_pred[, !(colnames(df_pred) %in% i)]
+###choose predictors, responses and meta data
+#^ and $ means only to look for this expression and not for resid_SRmammals
+nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))), 
+                           seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))), 
+                           seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))), 
+                           seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))), 
+                           seq(grep("residsum_generalist_N3", names(tbl)), grep("^sum_plant_N9", names(tbl))))]
+
+nm_pred_all <- colnames(tbl)[c(which(colnames(tbl) %in% "AGB"), 
+                               which(colnames(tbl) %in% "BE_FHD") : which(colnames(tbl) %in% "BE_PR_55"), 
+                               which(colnames(tbl) %in% "BE_PR_REG") : which(colnames(tbl) %in% "LAI"), 
+                               which(colnames(tbl) %in% "chm_surface_ratio"), 
+                               which(colnames(tbl) %in% "pulse_returns_max") : which(colnames(tbl) %in% "pulse_returns_mean"), 
+                               which(colnames(tbl) %in% "pulse_returns_sd"), 
+                               which(colnames(tbl) %in% "vegetation_coverage_01m") : which(colnames(tbl) %in% "vegetation_coverage_10m"), 
+                               which(colnames(tbl) %in% "mdn_rtrn"), 
+                               which(colnames(tbl) %in% "sd_rtrn_1"),
+                               which(colnames(tbl) %in% "gap_frac"), 
+                               which(colnames(tbl) %in% "elevation"), 
+                               which(colnames(tbl) %in% "elevsq"), 
+                               which(colnames(tbl) %in% "dstrb")
+)]
+nm_pred <- nm_pred_all
+for (i in nm_pred_all){
+  frq <- table(tbl[i])
+  if (max(frq) > floor(nrow(tbl) * 0.5)){
+    nm_pred <- nm_pred[!(nm_pred == i)]
   }
 }
-df_resp <- tbl[, c(which(colnames(tbl) %in% nm_resp))]
-df_resp <- as.data.frame(sapply(df_resp, function(x) as.numeric(x)))
-df_resp <- cbind(df_resp[,grep("resid", colnames(df_resp))], df_resp[,-grep("resid", colnames(df_resp))])
-df_meta <- tbl[, c(which(colnames(tbl) %in% nm_meta))]
-#df <- cbind(df_meta, df_pred, df_resp)
-cats <- unique(df_meta$cat)
 
-#scaling data to mean 0 and sd 1
-scl_lst <- lapply(df_pred, function(i){
-  if (class(i) == "numeric"){
-    scale(i, center = T, scale = T)
-  }else if (class(i) == "integer"){
-    scale(as.numeric(i), center = T, scale = T)
-  }else{
-    i <- i #non numeric or integer columns stay as they are
-  }
-})
-df_scl_pred <- do.call(data.frame, scl_lst)
+nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 
+###
+#CONTROL parameters
+###
+ind_nums <- sort(unique(tbl$selID))
+ind_nums <- ind_nums[ind_nums>0]
+type <- "ffs"
+method <- "pls" # or other caret methods
+
+
+modDir <- paste0(outpath, Sys.Date(), "_", type, "_", method, comm)
+if (file.exists(modDir)==F){
+  dir.create(file.path(modDir))
+}
 ########################################################################################
-###resampling by group = Für jede Landnutzungsform einen Plot je Durchlauf raus
-###nehmen (nach Plotnummer, restliche zufällig)
+###Do it (Don't change anything past this point except you know what you are doing!)
 ########################################################################################
-# outs_lst <- lapply(seq(ind_num), function(k){
-#   out_sel <- df_meta[which(df_meta$selID == k),]
-#   miss <- cats[!(cats %in% out_sel$cat)]
-#   df_miss <- df_meta[df_meta$cat %in% as.vector(miss),]
-#   set.seed(k)
-#   out_miss <- ddply(df_miss, .(cat), function(x){
-#     x[sample(nrow(x), 1), ]
-#   })
-#   out <- rbind(out_sel, out_miss)
-# })
-# save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
 
-cl <- 18
-registerDoParallel(cl)
-
-
-#model <- foreach(i = colnames(df_resp), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-model <- foreach(i = colnames(df_resp)[which(colnames(df_resp) %in% c("SRmoths", "residSRmoths"))], .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
-  # model <- foreach(i = (colnames(df_resp)[which(colnames(df_resp) %in% "ants_jtu_NMDS1"): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-  # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl",
-  #                     "tuneLength", "modDir", "type", "i"))
-  # model <- foreach(i = (colnames(df_resp)[1:floor(length(colnames(df_resp))/2)]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-  #model <- foreach(i = (colnames(df_resp)[ceiling(length(colnames(df_resp))/2): length(colnames(df_resp))]), .packages=c("caret", "CAST", "plyr"))%dopar%{
-  #model <- foreach(i = (colnames(df_resp)[28:159]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-  #model <- foreach(i = (colnames(df_resp)[c(1:27,160:length(colnames(df_resp)))]), .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{
-  ########################################################################################
-  ###create and filter dataframe with all predictors and one response
-  ########################################################################################
-  df_scl <- cbind(df_meta, df_resp[,c(which(colnames(df_resp) == i))], df_scl_pred)
-  colnames(df_scl)[grepl("df_resp",colnames(df_scl))] <- i
-  df_scl <- Filter(function(x)(length(unique(x))>1), df_scl)
-  df_scl <- df_scl[complete.cases(df_scl),]
-  save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
-  
-  ###check outs list
-  outs_lst <- lapply(ind_nums, function(k){
-    out_sel <- df_scl[which(df_scl$selID == k),]
-    miss <- cats[!(cats %in% out_sel$cat)]
-    df_miss <- df_scl[df_scl$cat %in% as.vector(miss),]
-    set.seed(k)
-    out_miss <- ddply(df_miss, .(cat), function(x){
-      x[sample(nrow(x), 1), ]
-    })
-    out <- rbind(out_sel, out_miss)
+###create outs list
+outs_lst <- lapply(ind_nums, function(k){
+  out_sel <- tbl[which(tbl$selID == k),]
+  miss <- cats[!(cats %in% out_sel$cat)]
+  df_miss <- tbl[tbl$cat %in% as.vector(miss),]
+  set.seed(k)
+  out_miss <- ddply(df_miss, .(cat), function(x){
+    x[sample(nrow(x), 1), ]
   })
-  save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
+  out <- rbind(out_sel, out_miss)
+})
+save(outs_lst, file = paste0(modDir, "/outs_lst.RData"))
+
+###scaling nm_pred columns and writing whole df
+scl_lst <- lapply(colnames(tbl), function(m){
+  if(m %in% nm_pred){
+    if (class(tbl[,m]) == "numeric"){
+      scale(tbl[,m], center = T, scale = T)
+    }else if (class(tbl[,m]) == "integer"){
+      scale(as.numeric(tbl[,m]), center = T, scale = T)
+    }else{
+      tbl[,m] <- tbl[,m] #non numeric or integer columns stay as they are
+    }
+  }else{
+    tbl[,m] <- tbl[,m] #non numeric or integer columns stay as they are}
+  }})
+tbl_scl <- do.call(data.frame, scl_lst)
+colnames(tbl_scl) <- colnames(tbl)
+
+saveRDS(tbl_scl, file = paste0(modDir, "/tbl_scl.rds"))
+
+
+cl <- 30
+registerDoParallel(cl)
+# i <- "SRmoths"
+model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###all
   
-  
-  
-  for (j in seq(ind_nums)){
-    print(j)
-    # #if some plot in outs_lst is now filtered, fill void with other plot of 
-    # #that landuse by chance (problem with toolittle plot subset (eg. only forest))
-    # for(k in seq(nrow(outs_lst[[j]]))){
-    #   if(!(outs_lst[[j]]$plotID[[k]] %in% df_scl$plotID)){
-    #     df_miss <- df_scl[df_scl$cat %in% as.vector(outs_lst[[j]]$cat[[k]]),c(1:3)]
-    #     set.seed(k)
-    #     outs_lst[[j]][k,] <- ddply(df_miss, .(cat), function(x){
-    #       x[sample(nrow(x), 1), ]
-    #     })
-    #   }
-    # }
-    # save(outs_lst, file = paste0(modDir, "/outs_lst_", i, ".RData"))
+  # model <- foreach(i = colnames(tbl)[which(colnames(tbl) %in% c("SRmoths"))], 
+  # .errorhandling = "remove", .packages=c("caret", "CAST", "plyr"))%dopar%{ ###moths
+  #x <- 5             
+  for (x in seq(ind_nums)){
+    # print(j)
+    out_plt <- outs_lst[[x]]$plotID
+    tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
+    tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
     
-    
-    df_test <- df_scl[which(df_scl$plotID %in% outs_lst[[j]]$plotID),]
-    df_train <- df_scl[!(df_scl$plotID %in% df_test$plotID),]
-    
-    resp <- df_train[,which(colnames(df_train) == i)]
-    pred <- df_train[,c(which(colnames(df_train) %in% nm_pred))]
-    
-    ################
-    ################
-    ################
-    # df_test$selID
-    cvind_num <- unique(sort(df_train$selID))
-    cvind_num <- cvind_num[which(cvind_num >0)]
-    cvouts_lst <- lapply(cvind_num, function(k){
-      out_sel <- df_train[which(df_train$selID == k),]
-      miss <- cats[!(cats %in% out_sel$cat)]
-      df_miss <- df_train[df_train$cat %in% as.vector(miss),]
+    ##cv index von jeder landuseclass eines, aber zuf?llige Wahl der indices und n mal wiederholt
+    cvouts_lst <- lapply(seq(1:50), function(k){
       set.seed(k)
-      out_miss <- ddply(df_miss, .(cat), function(x){
+      out_sel <- ddply(tbl_in, .(cat), function(x){
         x[sample(nrow(x), 1), ]
       })
-      out <- rbind(out_sel, out_miss)
+      out <- rbind(out_sel)
     })
-    ################
-    ################
-    ################
-    
-    
-    cvIndex_out <- lapply(seq(length(cvouts_lst)), function(i){# #######wie übergeben
-      out_res <- as.integer(rownames(cvouts_lst[[i]]))
-    })
-    
     cvIndex <- lapply(cvouts_lst, function(i){
-      res <- which(!(df_train$plotID %in% i$plotID))
+      res <- which(!(tbl_in$plotID %in% i$plotID))
+    })
+    cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
+      res <- which((tbl_in$plotID %in% i$plotID))
     })
     
     
-    if (type == "rfe"){
-      mod <- rfe(pred, resp, method = method,
-                 rfeControl = rfe_cntrl, tuneLength = tuneLength)
-    }else if (type == "ffs"){
-      mod <- ffs(pred, resp, method = method, 
-                 tuneGrid = expand.grid(ncomp = c(1:5, 10, 15, 20, 25, 30, 34)),
-                 #tuneGrid = expand.grid(ncomp = 1), 
-                 metric = "RMSE", trControl = trainControl(index = cvIndex)) 
-      
-    }
-    # mod <- train(pred, resp, method = method, tuneGrid = expand.grid(ncomp = 1),
-    # trControl = trainControl(index = cvIndex, allowParallel = F))
+    # ###cv index gleiches system wie outer loop
+    # cvind_num <- unique(sort(tbl_in$selID))
+    # cvind_num <- cvind_num[which(cvind_num >0)]
+    # cvouts_lst <- lapply(cvind_num, function(k){
+    #   out_sel <- tbl_in[which(tbl_in$selID == k),]
+    #   miss <- cats[!(cats %in% out_sel$cat)]
+    #   df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
+    #   set.seed(k)
+    #   out_miss <- ddply(df_miss, .(cat), function(x){
+    #     x[sample(nrow(x), 1), ]
+    #   })
+    #   out <- rbind(out_sel, out_miss)
+    # })
+    # cvIndex <- lapply(cvouts_lst, function(i){
+    #   res <- which(!(tbl_in$plotID %in% i$plotID))
+    # })
+    # cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
+    #   res <- which((tbl_in$plotID %in% i$plotID))
+    # })
+    
+    
+    
+    # if (type == "rfe"){
+    #   mod <- rfe(pred, resp, method = method,
+    #              rfeControl = rfe_cntrl, tuneLength = tuneLength)
+    # }else if (type == "ffs"){
+    mod <- ffs(tbl_in[,nm_pred], tbl_in[,which(colnames(tbl_in) == i)], 
+               method = "pls",
+               tuneGrid = expand.grid(ncomp = c(1:7)), #:5, 10, 15, 20, 25, 30, 34)),
+               metric = "RMSE",
+               trControl = trainControl(method = "cv", index = cvIndex, indexOut = cvIndex_out),
+               verbose = T)
+    # mod <- get(load(file = paste0("../data/sep18/2018-09-24_ffs_pls_cv_allplots_", 
+    #                               "only_moths_RMSE_elev_dstrb_elevsq_plsresid/", 
+    #                               "indv_model_run5_ffs_pls_SRmoths.RData")))
+    
+    # ###checking input
+    # out_plt
+    # data <- tbl_in[,nm_pred]
+    # cvIndex
+    # cvIndex_out
+    # tbl_in$plotID
+    
     nm <- gsub("_", "", i)
-    # nm_lst <- strsplit(x = i, split = "_")
-    # if (grepl("NMDS", nm_lst[[1]][3])){
-    #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2], nm_lst[[1]][3])
-    # } else{
-    #   nm <- paste0(nm_lst[[1]][1], nm_lst[[1]][2])
-    # }
-    # save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
-    #                         nm, ".RData"))
-    save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
+    
+    save(mod, file = paste0(modDir, "/indv_model_run", x, "_", type, "_", method, "_", 
                             nm, ".RData"))
     print(paste0("DONE: ", modDir, "model", type, "_", method, "_", 
-                 i, "___________run", j))
+                 i, "___________run", x))
     
   }
   
 }
 
-
-# for (i in colnames(df_resp)){ ####problem mit heteroptera
-# for (i in c("resid_SRmammals", "resid_SRdungbeetles", "resid_SRspiders", "resid_SRmillipedes", "resid_SRotheraculeata", 
-#             "resid_SRparasitoids", "resid_SRcollembola", "resid_SRothercoleoptera", "resid_SRsyrphids", "resid_SRorthoptera", 
-#             "resid_SRbats", "resid_SRants", "resid_SRbees", "resid_SRmoths", "resid_SRbirds", "resid_SRsnails", 
-#             "resid_SRanimals", "resid_SRrosids", "resid_SRasterids", "resid_SRmonocots", "resid_SReudicots", 
-#             "resid_SRlycopodiopsida", "resid_SRconifers", "resid_SRferns", "resid_SRmagnoliids", "resid_SRallplants", 
-#             "SRmammals", "SRdungbeetles", "SRspiders", "SRmillipedes", "SRotheraculeata", "SRparasitoids", "SRcollembola", 
-#             "SRothercoleoptera", "SRsyrphids", "SRorthoptera", "SRbats", "SRants", "SRbees", "SRmoths", "SRbirds", 
-#             "SRsnails", "SRanimals", "SRrosids", "SRasterids", "SRmonocots", "SReudicots", "SRlycopodiopsida", 
-#             "SRconifers", "SRferns", "SRmagnoliids", "SRallplants")){
-#   
-#   # clusterExport(cl, c("ind_num", "df_scl", "outs_lst", "method", "rfe_cntrl", 
-#   #                     "tuneLength", "modDir", "type", "i"))
-#   ########################################################################################
-#   ###create and filter dataframe with als predictors and one response
-#   ########################################################################################
-#   df_scl <- cbind(df_meta, df_resp[,c(which(colnames(df_resp) == i))], df_scl_pred)
-#   colnames(df_scl)[grepl("df_resp",colnames(df_scl))] <- i
-#   df_scl <- Filter(function(x)(length(unique(x))>1), df_scl)
-#   df_scl <- df_scl[complete.cases(df_scl),]
-#   save(df_scl, file = paste0(modDir, "/df_scl_", i, "_filtered.RData"))
-#   
-#   
-#   for (j in seq(ind_num)){
-#     
-#     df_test <- df_scl[which(df_scl$plotID %in% outs_lst[[j]]$plotID),]
-#     df_train <- df_scl[!(df_scl$plotID %in% df_test$plotID),]
-#     
-#     resp <- df_train[,which(colnames(df_train) == i)]
-#     pred <- df_train[,c(which(colnames(df_train) %in% nm_pred))]
-#     
-#     
-#     
-#     mod <- rfe(pred, resp, method = method,
-#                rfeControl = rfe_cntrl, tuneLength = tuneLength)
-#     
-#     save(mod, file = paste0(modDir, "/indv_model_run", j, "_", type, "_", method, "_", 
-#                             i, ".RData"))
-#     print(paste0("DONE: ", modDir, "model", type, "_", method, "_", 
-#                  i, "___________run", j))
-#     
-#   }
-#   
-# }
 
 
 save(nm_pred, file = paste0(modDir, "/nm_pred.RData"))
