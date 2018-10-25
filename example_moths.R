@@ -14,36 +14,51 @@ library(plyr)
 library(CAST)
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "sep18/"
-all_plts <- T
+sub <- "okt18/"
+all_plts <- F
+frst <- T
 inpath <- paste0("../data/", sub)
-outpath <- paste0("../data/", sub, "example_moths/example_moths_skript259_scl_outside_loop_cvindex/")
+outpath <- paste0("../data/", sub, "example_moths/")
 if (file.exists(outpath)==F){
   dir.create(file.path(outpath), recursive = T)
 }
 
+###read data
+dat_ldr_mrg <- readRDS(paste0(inpath, "dat_ldr_mrg.rds"))
+outs_lst <- readRDS(paste0(inpath, "outs_lst.rds"))
 
-dat_ldr_mrg <- get(load(paste0(inpath, "dat_ldr_mrg.RData")))
 
-tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") : which(colnames(dat_ldr_mrg) == "lat"), 
-                      which(colnames(dat_ldr_mrg) == "dstrb"), 
-                      which(colnames(dat_ldr_mrg) == "SRmoths"), 
-                      which(colnames(dat_ldr_mrg) == "plotUnq"), 
-                      which(colnames(dat_ldr_mrg) == "AGB"), 
-                      which(colnames(dat_ldr_mrg) == "BE_FHD") : which(colnames(dat_ldr_mrg) == "BE_PR_55"), 
-                      which(colnames(dat_ldr_mrg) == "BE_PR_REG") : which(colnames(dat_ldr_mrg) == "LAI"), 
-                      which(colnames(dat_ldr_mrg) == "chm_surface_ratio"), 
-                      which(colnames(dat_ldr_mrg) == "pulse_returns_max") : which(colnames(dat_ldr_mrg) == "pulse_returns_mean"), 
-                      which(colnames(dat_ldr_mrg) == "pulse_returns_sd"), 
-                      which(colnames(dat_ldr_mrg) == "vegetation_coverage_01m") : which(colnames(dat_ldr_mrg) == "vegetation_coverage_10m"), 
-                      which(colnames(dat_ldr_mrg) == "mdn_rtrn"), 
+tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") :
+                        which(colnames(dat_ldr_mrg) == "lat"),
+                      which(colnames(dat_ldr_mrg) == "plotUnq"),
+                      which(colnames(dat_ldr_mrg) == "lui"),
+                      which(colnames(dat_ldr_mrg) == "SRmammals") :
+                        which(colnames(dat_ldr_mrg) == "sum_plant_N8"),
+                      which(colnames(dat_ldr_mrg) == "AGB"),
+                      which(colnames(dat_ldr_mrg) == "BE_FHD") :
+                        which(colnames(dat_ldr_mrg) == "BE_PR_55"),
+                      which(colnames(dat_ldr_mrg) == "BE_PR_REG") :
+                        which(colnames(dat_ldr_mrg) == "LAI"),
+                      which(colnames(dat_ldr_mrg) == "chm_surface_ratio"),
+                      which(colnames(dat_ldr_mrg) == "pulse_returns_max") :
+                        which(colnames(dat_ldr_mrg) == "pulse_returns_mean"),
+                      which(colnames(dat_ldr_mrg) == "pulse_returns_sd"),
+                      which(colnames(dat_ldr_mrg) == "vegetation_coverage_01m") :
+                        which(colnames(dat_ldr_mrg) == "vegetation_coverage_10m"),
+                      which(colnames(dat_ldr_mrg) == "mdn_rtrn"),
                       which(colnames(dat_ldr_mrg) == "sd_rtrn_1"),
                       which(colnames(dat_ldr_mrg) == "gap_frac"))]
 
-tbl$selID <- as.numeric(substr(as.character(tbl$plotID), 4, 4))
 cats <- unique(tbl$cat)
 
-outs_lst <- get(load(paste0(inpath, "bsp_outs_lst_allplots.RData")))
+if (all_plts == F){
+  if (frst == T){
+    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
+  }else if (frst == F){
+    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+  }
+  tbl <- tbl[which(tbl$cat %in% cat),]
+}
 
 #scaling data to mean 0 and sd 1
 scl_lst <- lapply(colnames(tbl), function(m){
@@ -68,22 +83,18 @@ rmse_comp <- data.frame(rmsesd_elev = seq(length(outs_lst)),
 ########################################################################################
 ###predicting, etc
 ########################################################################################
-#runs <- seq(length(outs_lst))
+runs <- seq(length(outs_lst))
 
 #x <- 5
-runs <- 5
+# runs <- 5
 ###loop over 5 runs
 for (x in runs){
   out_plt <- outs_lst[[x]]$plotID
-  # tbl$elevation_scale <- scale(tbl$elevation, center = T, scale = T)
-  # tbl$elevsq_scale <- scale(tbl$elevsq, center = T, scale = T)
-  
-
   
   tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
   tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
   
-  ###cv index von jeder landuseclass eines, aber zuf?llige Wahl der indices und 20 mal wiederholt
+  ###cv k-index von jeder landuseclass eines, aber zuf?llige Wahl der indices und 20 mal wiederholt
   # cvouts_lst <- lapply(seq(1:20), function(k){
   #   set.seed(k)
   #   out_sel <- ddply(tbl_in, .(cat), function(x){
@@ -97,25 +108,25 @@ for (x in runs){
   
   
   ###cv index gleiches system wie outer loop
-    cvind_num <- unique(sort(tbl_in$selID))
-    cvind_num <- cvind_num[which(cvind_num >0)]
-    cvouts_lst <- lapply(cvind_num, function(k){
-      out_sel <- tbl_in[which(tbl_in$selID == k),]
-      miss <- cats[!(cats %in% out_sel$cat)]
-      df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
-      set.seed(k)
-      out_miss <- ddply(df_miss, .(cat), function(x){
-        x[sample(nrow(x), 1), ]
-      })
-      out <- rbind(out_sel, out_miss)
+  cvind_num <- unique(sort(tbl_in$selID))
+  cvind_num <- cvind_num[which(cvind_num >0)]
+  cvouts_lst <- lapply(cvind_num, function(k){
+    out_sel <- tbl_in[which(tbl_in$selID == k),]
+    miss <- cats[!(cats %in% out_sel$cat)]
+    df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
+    set.seed(k)
+    out_miss <- ddply(df_miss, .(cat), function(x){
+      x[sample(nrow(x), 1), ]
     })
-    cvIndex <- lapply(cvouts_lst, function(i){
-      res <- which(!(tbl_in$plotID %in% i$plotID))
-    })
-    cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
-      res <- which((tbl_in$plotID %in% i$plotID))
-    })
-
+    out <- rbind(out_sel, out_miss)
+  })
+  cvIndex <- lapply(cvouts_lst, function(i){
+    res <- which(!(tbl_in$plotID %in% i$plotID))
+  })
+  cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
+    res <- which((tbl_in$plotID %in% i$plotID))
+  })
+  
   # dat <- data.frame("elevation"= tbl_in$elevation,
   #                   "elevsq" = tbl_in$elevsq,
   #                   "response"= tbl_in[,grepl(paste0("SRmoths"),
@@ -149,39 +160,41 @@ for (x in runs){
   # ### pls: with ffs all lidars
   # # ######
   # # resp_ffs <- tbl_in[,which(colnames(tbl_in) == "SRmoths")]
-    nm_pred_ffs <- colnames(tbl_scl)[c(seq(grep("AGB", names(tbl_scl)),
-                                           grep("gap_frac", names(tbl_scl))),
-                                       grep("elevation", names(tbl_scl)),
-                                       grep("dstrb", names(tbl_scl)),
-                                       grep("elevsq", names(tbl_scl)))]
-    # 
-    # # pred_all_ffs <- tbl_in[,c(which(colnames(tbl_in) %in% nm_pred_ffs))]
-    # # pred_ffs <- pred_all_ffs
-    for (i in nm_pred_ffs){
-      frq <- table(tbl[,i])
-      if (max(frq) > floor(nrow(tbl) * 0.5) | is.nan(sum(tbl[,i]))){
-        nm_pred_ffs <- nm_pred_ffs[!(nm_pred_ffs == i)]
-      }
+  nm_pred_ffs <- colnames(tbl_scl)[c(seq(grep("AGB", names(tbl_scl)),
+                                         grep("gap_frac", names(tbl_scl))),
+                                     grep("elevation", names(tbl_scl)),
+                                     grep("dstrb", names(tbl_scl)),
+                                     grep("elevsq", names(tbl_scl)), 
+                                     grep("lui", names(tbl_scl)))]
+  # 
+  # # pred_all_ffs <- tbl_in[,c(which(colnames(tbl_in) %in% nm_pred_ffs))]
+  # # pred_ffs <- pred_all_ffs
+  for (i in nm_pred_ffs){
+    frq <- table(tbl[,i])
+    if (max(frq) > floor(nrow(tbl) * 0.5) | is.nan(sum(tbl[,i]))){
+      nm_pred_ffs <- nm_pred_ffs[!(nm_pred_ffs == i)]
     }
-    
-    
-  # cl <- 18
-  # registerDoParallel(cl)
+  }
+  
+  
+  cl <- 5
+  registerDoParallel(cl)
   
   mod_elev <- train(tbl_in[,c("elevation","elevsq")], tbl_in$SRmoths, method = "pls",
                     tuneGrid = expand.grid(ncomp = c(1,2)),
                     metric = "RMSE",
                     trControl = trainControl(method = "cv", index = cvIndex, indexOut = cvIndex_out))
   save(mod_elev, file = paste0(outpath, "modelrun", x, "_moths_only_elev_elevsq_in_ffs.RData"))
+  # mod_elev <- get(load(paste0(outpath, "modelrun", x, "_moths_only_elev_elevsq_in_ffs.RData")))
   
-
-  # mod_ffs <- ffs(tbl_in[,nm_pred_ffs], tbl_in$SRmoths, method = "pls",
-  #                tuneGrid = expand.grid(ncomp = c(1:7)), #:5, 10, 15, 20, 25, 30, 34)),
-  #                metric = "RMSE",
-  #                trControl = trainControl(method = "cv", index = cvIndex, indexOut = cvIndex_out),
-  #                verbose = F)
-  # save(mod_ffs, file = paste0(outpath, "modelrun", x, "_moths_incl_elev_elevsq_in_ffs.RData"))
-  mod_ffs <- get(load(paste0(outpath, "modelrun", x, "_moths_incl_elev_elevsq_in_ffs.RData")))
+  
+  mod_ffs <- ffs(tbl_in[,nm_pred_ffs], tbl_in$SRmoths, method = "pls",
+                 tuneGrid = expand.grid(ncomp = c(1:7)), #:5, 10, 15, 20, 25, 30, 34)),
+                 metric = "RMSE",
+                 trControl = trainControl(method = "cv", index = cvIndex, indexOut = cvIndex_out),
+                 verbose = F)
+  save(mod_ffs, file = paste0(outpath, "modelrun", x, "_moths_incl_elev_elevsq_in_ffs.RData"))
+  # mod_ffs <- get(load(paste0(outpath, "modelrun", x, "_moths_incl_elev_elevsq_in_ffs.RData")))
   # ####checking input
   # out_plt
   # data <- tbl_in[,nm_pred_ffs]
