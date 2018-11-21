@@ -41,9 +41,9 @@ if (all_plts == F){
 
 if (all_plts == F){
   if (frst == T){
-    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
+    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo", "hel")
   }else if (frst == F){
-    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+    cat <- c("cof", "gra", "hom", "mai", "sav")
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
 }

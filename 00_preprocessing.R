@@ -17,10 +17,11 @@ rm(list=ls())
 ########################################################################################
 #Packages: 
 library(caret)
+library(plyr)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "okt18/"
+sub <- "nov18/"
 inpath_general <- "../data/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)

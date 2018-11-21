@@ -19,31 +19,30 @@ library(foreach)
 library(parallel)
 library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
-setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-# setwd("/media/memory02/users/aziegler/src")
-sub <- "okt18/"
+# setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
+setwd("/mnt/sd19006/data/users/aziegler/src")
+sub <- "nov18/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
-
 
 ########################################################################################
 ###Settings
 ########################################################################################
-##read datasets
-outs_lst <- readRDS(paste0(inpath, "outs_lst.rds"))
 
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "frst_incl_elevelev2lui"
+comm <- "frst_noelevelev2_cvindex"
 all_plts <- F
 frst <- T # set true if model should only be done for forested plots
-cl <- 16
+cl <- 19
 ###
 #DATAFRAME manipulation
 ###
 ###choose dataframe and load dataframe
 tbl_nm <- "dat_ldr_mrg.rds"
 
+##read datasets
+outs_lst <- readRDS(paste0(inpath, "outs_lst.rds"))
 dat_ldr_mrg <- readRDS(paste0(inpath, tbl_nm))
 
 ###crop table to clumns that could at all be relavant
@@ -52,7 +51,7 @@ tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") :
                       which(colnames(dat_ldr_mrg) == "plotUnq"),
                       which(colnames(dat_ldr_mrg) == "lui"),
                       which(colnames(dat_ldr_mrg) == "SRmammals") :
-                        which(colnames(dat_ldr_mrg) == "sum_plant_N8"),
+                        which(grepl("^sum_plant_N", colnames(dat_ldr_mrg))),
                       which(colnames(dat_ldr_mrg) == "AGB"),
                       which(colnames(dat_ldr_mrg) == "BE_FHD") :
                         which(colnames(dat_ldr_mrg) == "BE_PR_55"),
@@ -80,9 +79,9 @@ cats <- unique(tbl$cat)
 
 if (all_plts == F){
   if (frst == T){
-    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
+    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo", "hom")
   }else if (frst == F){
-    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
+    cat <- c("cof", "gra", "hel", "mai", "sav")
   }
   tbl <- tbl[which(tbl$cat %in% cat),]
 }
@@ -95,8 +94,9 @@ nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$
                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))),
                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))),
                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))),
-                           seq(grep("residsum_generalist_N4", names(tbl)), grep("^sum_plant_N8", names(tbl))))]
-
+                           seq(grep("residsum_predator_N", names(tbl)), grep("residsum_plant_N", names(tbl))), 
+                           seq(grep("^sum_predator_N", names(tbl)), grep("^sum_plant_N", names(tbl))))]
+# nm_resp <- "SRmammals"
 nm_pred_all <- colnames(tbl)[c(which(colnames(tbl) %in% "AGB"),
                                which(colnames(tbl) %in% "BE_FHD") : which(colnames(tbl) %in% "BE_PR_55"),
                                which(colnames(tbl) %in% "BE_PR_REG") : which(colnames(tbl) %in% "LAI"),
@@ -106,10 +106,10 @@ nm_pred_all <- colnames(tbl)[c(which(colnames(tbl) %in% "AGB"),
                                which(colnames(tbl) %in% "vegetation_coverage_01m") : which(colnames(tbl) %in% "vegetation_coverage_10m"),
                                which(colnames(tbl) %in% "mdn_rtrn"),
                                which(colnames(tbl) %in% "sd_rtrn_1"),
-                               which(colnames(tbl) %in% "gap_frac"),
-                               which(colnames(tbl) %in% "elevation"),
-                               which(colnames(tbl) %in% "elevsq"),
-                               which(colnames(tbl) %in% "lui")
+                               which(colnames(tbl) %in% "gap_frac")#,
+                               # which(colnames(tbl) %in% "elevation"),
+                               # which(colnames(tbl) %in% "elevsq")
+                               # which(colnames(tbl) %in% "lui")
 )]
 nm_pred <- nm_pred_all
 for (i in nm_pred_all){
@@ -177,8 +177,8 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
     out_plt <- outs_lst[[x]]$plotID
     tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
     tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
-
-    # ##cv index von jeder landuseclass eines, aber zuf?llige Wahl der indices und n mal wiederholt
+    
+    # ##cv von jeder landuseclass eines, aber zuf?llige Wahl der indices und n mal wiederholt
     # cvouts_lst <- lapply(seq(1:50), function(k){
     #   set.seed(k)
     #   out_sel <- ddply(tbl_in, .(cat), function(x){
@@ -192,7 +192,7 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
     # cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie ?bergeben
     #   res <- which((tbl_in$plotID %in% i$plotID))
     # })
-
+    
 
     ###cv index gleiches system wie outer loop
     cvind_num <- unique(sort(tbl_in$selID))
@@ -214,8 +214,8 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
       res <- which((tbl_in$plotID %in% i$plotID))
     })
 
-
-
+    
+    
     # if (type == "rfe"){
     #   mod <- rfe(pred, resp, method = method,
     #              rfeControl = rfe_cntrl, tuneLength = tuneLength)
@@ -229,23 +229,23 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
     # mod <- get(load(file = paste0("../data/sep18/2018-09-24_ffs_pls_cv_allplots_",
     #                               "only_moths_RMSE_elev_dstrb_elevsq_plsresid/",
     #                               "indv_model_run5_ffs_pls_SRmoths.RData")))
-
+    
     # ###checking input
     # out_plt
     # data <- tbl_in[,nm_pred]
     # cvIndex
     # cvIndex_out
     # tbl_in$plotID
-
+    
     nm <- gsub("_", "", i)
-
+    
     save(mod, file = paste0(modDir, "/indv_model_run", x, "_", type, "_", method, "_",
                             nm, ".RData"))
     print(paste0("DONE: ", modDir, "model", type, "_", method, "_",
                  i, "___________run", x))
-
+    
   }
-
+  
 }
 
 

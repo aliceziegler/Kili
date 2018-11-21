@@ -19,12 +19,14 @@ library(plyr)
 library(dplyr)
 library(CAST)
 library(mgcv)
+library(reshape2)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "sep18/2018-09-25_ffs_pls_cv_allplots_allalpha_RMSE_elev_dstrb_elevsq_plsresid_cvindex/"
-# sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE_elev_dstrb/"
-all_plts <- T#################################################################dauerhaft mit grepl "all" umstellen
+sub <- "nov18/2018-11-16_ffs_plsnofrst_elevelev2_cvindex/"
+# sub <- "okt18/2018-10-28_ffs_plsnofrst_incl_elevelev2lui_cvindex/"
+
+all_plts <- F#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -35,9 +37,9 @@ if (file.exists(outpath)==F){
 ########################################################################################
 nm_pred <- get(load(file = paste0(inpath, "nm_pred.RData")))
 nm_resp <- get(load(file = paste0(inpath, "nm_resp.RData")))
-outs_lst <- get(load(paste0(inpath, "/outs_lst.RData")))
-mrg_tbl <- get(load(paste0(inpath, "../dat_ldr_mrg.RData")))
 nm_resp <- gsub("resid_", "resid", nm_resp)
+outs_lst <- readRDS(paste0(inpath, "../outs_lst.rds"))
+mrg_tbl <- readRDS(paste0(inpath, "../dat_ldr_mrg.rds"))
 tbl_scl <- readRDS(file = paste0(inpath, "tbl_scl.rds"))
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
@@ -55,39 +57,26 @@ run_all_srt <- mixedsort(model_strsplits[grep("run", model_strsplits)])
 for (i in seq(length(outs_lst))){
   names(outs_lst)[[i]] <- run_all_srt[[i]]
 }
-
-if (all_plts == F){
-  if(length(grep("_only", sub))){
-    frst <- T
-  }else{
-    frst <- F
-  }
-}
-
-if (all_plts == F){
-  if (frst == T){
-    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo")
-  }else if (frst == F){
-    cat <- c("cof", "gra", "hel", "hom", "mai", "sav")
-  }
-  tbl <- mrg_tbl[which(mrg_tbl$cat %in% cat),]
-  tbl_scl <- tbl_scl[which(mrg_tbl$cat %in% cat),]
-}else if (all_plts == T){
-  tbl <- mrg_tbl
-}
-cats <- unique(tbl$cat)
+# 
+# if (all_plts == F){
+#   if(length(grep("nofrst", sub)) > 0){
+#     frst <- F
+#   }else{
+#     frst <- T
+#   }
+# }
+# 
+# if (all_plts == F){
+#   if (frst == T){
+#     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo", "hom")
+#   }else if (frst == F){
+#     cat <- c("cof", "gra", "hel", "mai", "sav")
+#   }}
+cats <- unique(tbl_scl$cat)
+tbl <- mrg_tbl[which(mrg_tbl$cat %in% cats),]
 
 cv_in_out_lst <- lapply(seq(length(outs_lst)), function(x){
   out_plt <- outs_lst[[x]]$plotID
-
-  ## m-fache cv von jeder landuseclass eines, aber zuf?llige Wahl der indices und n mal wiederholt
-  # cvouts_lst <- lapply(seq(1:50), function(m){
-  #   set.seed(m)
-  #   out_sel <- ddply(tbl_scl[which(!(tbl_scl$plotID %in% out_plt)),], .(cat), function(x){
-  #     x[sample(nrow(x), 1), ]
-  #   })
-  #   out <- rbind(as.character(out_sel$plotID))
-  # })
   tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
   tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
   
@@ -125,34 +114,21 @@ cv_in_out_lst <- lapply(seq(length(outs_lst)), function(x){
 return(list(cvIndex = cvIndex, 
             cvIndex_out = cvIndex_out))
 })
-cv_in_out_lst[[5]]$cvIndex_out
-cv_in_out <- do.call(rbind,cv_in_out_lst)
-# cvIndex <- cv_in_out[[5,1]]
-# cvIndex_out <- cv_in_out[[5,2]]
-# # 
-# # cvin <- do.call(rbind, cv_in_out["cvIndex",])
-# # rownames(cvin) <- paste0("out_run", seq(nrow(cvin)))
-# # colnames(cvin) <- paste0("cv_run", seq(ncol(cvin)))
-# # 
-# # cvout <- do.call(rbind, cv_in_out["cvIndex_out",])
-# # rownames(cvout) <- paste0("out_run", seq(nrow(cvout)))
-# # colnames(cvout) <- paste0("cv_run", seq(ncol(cvout)))
-# 
+
 
 # ##############Number of plots with this taxa
 #i <- models[grep("_SRheteroptera", models)] #######testing
 resp_loop <- lapply(nm_resp, function(x){
-  # print(x)
- 
+  
+  # k�nnte aus Tagelle raus, aber wegen resid und prediktoren und meta 
+  # in tabelle ist es einfacher, die hier mitzumachen
     ###summary observations
     obs_smmry <- data.frame(Nplots = sum(!is.na(tbl[,x])))
     row.names(obs_smmry) <- x
-    meanN_perplot <- mean(tbl[,x], na.rm = T)
+    meanN_perplot <- mean(tbl[,x], na.rm = T)######################brauchen wir tbl
     sd_per_resp <- sd(tbl[,x], na.rm = T)
     obs_smmry$meanN_perplot <- meanN_perplot
     obs_smmry$sd_per_resp <- sd_per_resp
-    
-    
     
     #####pls cv prediction only elev and elevsq
     pls_elevsq_cv_prdct <- lapply(seq(length(outs_lst)), function(k){
@@ -168,11 +144,12 @@ resp_loop <- lapply(nm_resp, function(x){
       
       
        mod_pls_elev_cv <- tryCatch(
-      train(tbl_in[,c("elevation","elevsq")], tbl_in[,x], method = "pls",
-                               tuneGrid = expand.grid(ncomp = c(1,2)),
-                               metric = "RMSE",
-                               trControl = trainControl(method = "cv", index = cvIndex, 
-                                                        indexOut = cvIndex_out)),
+      train(tbl_in[,c("elevation","elevsq")], tbl_in[,x], 
+            method = "pls",
+            tuneGrid = expand.grid(ncomp = c(1,2)),
+            metric = "RMSE",
+            trControl = trainControl(method = "cv", index = cvIndex, 
+                                     indexOut = cvIndex_out)),
       error = function(e)pls_elevsq_cv_prdct <- NA)
 
 
@@ -194,34 +171,11 @@ return(list(plotID = tbl_out$plotID,
                 ))
     })
 
-# nm <- resp_loop[[1]]$resp
-# mod_run1 <- resp_loop[[1]]$resp_pls_elevsq_cv_prdct[[1]]$mod_pls_elev_cv
-# prdct_run1 <- resp_loop[[1]]$resp_pls_elevsq_cv_prdct[[1]]$prdct_pls_elev_cv
-
-# 
-#     ################################################################################################hier werden 2 ncomps in datenframe geschrieben
-#     prdct_df <- data.frame(plotID = tbl_out$plotID,
-#                            plotUnq = tbl_out$plotUnq,
-#                            elevation = tbl_out$elevation,
-#                            resp = tbl_out[,which(colnames(tbl_out) == x)],
-#                            prdct = prdct)
-#     # colnames(prdct_df)[which(colnames(prdct_df) == "prdct")] <- paste0(j, "_", "run_", i)
-#     colnames(prdct_df) <- c("plotID", "plotUnq", "elevation", x, paste0("prd_", x, "_", "run_", k))
-#     return(prdct_df = prdct_df)
-#   })
-
-#   return(list(obs_smmry = obs_smmry))
-# })
 resp_loop_bind <- do.call(rbind, resp_loop)
-# # resp_loop <- resp_loop[which(rownames(resp_loop) %in% nm_resp),]
-# moths5runs <- resp_loop_bind[which(resp_loop_bind[,1] == "SRmoths"),]
-# mod <- moths5runs$resp_pls_elevsq_cv_prdct[[5]]$mod_pls_elev_cv
-# prdct <- moths5runs$resp_pls_elevsq_cv_prdct[[5]]$prdct_pls_elev_cv
-# # xyz <- do.call(rbind, resp_loop[1,2])
-# ##for SRmoths
 
 
 saveRDS(resp_loop_bind, file = paste0(inpath, "resp_loop_bind.rds"))
+#resp_loop_bind <- readRDS(file = paste0(inpath, "resp_loop_bind.rds"))
 
 ###pls_elevsq_cv_prdct dataframe
 pls_elevsq_cv_df_mrg_lst <- lapply(seq(nrow(resp_loop_bind)), function(k){
@@ -229,9 +183,9 @@ pls_elevsq_cv_df_mrg_lst <- lapply(seq(nrow(resp_loop_bind)), function(k){
     prdct <- resp_loop_bind[k,]$resp_pls_elevsq_cv_prdct[[m]]$prdct_pls_elev_cv
     plotID <- resp_loop_bind[k,]$resp_pls_elevsq_cv_prdct[[m]]$plotID
     plotUnq <-   resp_loop_bind[k,]$resp_pls_elevsq_cv_prdct[[m]]$plotUnq
-    prdct_df <- data.frame(plotID, plotUnq, prdct)
-    colnames(prdct_df) <- c("plotID", "plotUnq", paste0("prd_", resp_loop_bind[k,]$resp, "_run_", m))
-    return(prdct_df)
+    prdct_df_elev <- data.frame(plotID, plotUnq, prdct)
+    colnames(prdct_df_elev) <- c("plotID", "plotUnq", paste0("prd_", resp_loop_bind[k,]$resp, "_run_", m))
+    return(prdct_df_elev)
   })
   pls_elevsq_cv_df_mrg <- Reduce(function(x, y) merge(x, y, by="plotUnq", all = T), prdct_all_runs)
   pls_elevsq_cv_df_mrg <- pls_elevsq_cv_df_mrg[, !grepl("\\.", colnames(pls_elevsq_cv_df_mrg))]
@@ -242,19 +196,18 @@ pls_elevsq_prdct_cv_df <- Reduce(function(x, y) merge(x, y, by="plotUnq"), pls_e
 pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[, !grepl("\\.", colnames(pls_elevsq_prdct_cv_df))]
 pls_elevsq_prdct_cv_df <- data.frame(plotID = substr(pls_elevsq_prdct_cv_df$plotUnq, 1, 4), 
                                      plotUnq = pls_elevsq_prdct_cv_df$plotUnq, 
-                                     #elevation = pls_elevsq_prdct_cv_df$elevation, 
-                                     #pls_elevsq_prdct_cv_df[,grepl("run", colnames(pls_elevsq_prdct_cv_df))]) 
                                      pls_elevsq_prdct_cv_df[,-(which(colnames(pls_elevsq_prdct_cv_df) == "plotUnq"))])
 pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,colSums(is.na(pls_elevsq_prdct_cv_df)) < nrow(pls_elevsq_prdct_cv_df)]
 pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,-which(grepl("resid", colnames(pls_elevsq_prdct_cv_df)))]
-pls_elevsq_rlvnt <- colnames(pls_elevsq_prdct_cv_df)[grepl("run", colnames(pls_elevsq_prdct_cv_df))]
-pls_elevsq_rlvnt_Unq <- unique(substr(pls_elevsq_rlvnt, 5, nchar(pls_elevsq_rlvnt)-6))
+# pls_elevsq_rlvnt <- colnames(pls_elevsq_prdct_cv_df)[grepl("run", colnames(pls_elevsq_prdct_cv_df))]
+# pls_elevsq_rlvnt_Unq <- unique(substr(pls_elevsq_rlvnt, 5, nchar(pls_elevsq_rlvnt)-6))
 pls_elevsq_prdct_cv_df <- pls_elevsq_prdct_cv_df[,c(which(colnames(pls_elevsq_prdct_cv_df) =="plotID"), 
                                                     which(colnames(pls_elevsq_prdct_cv_df) =="plotUnq"), 
                                                     which(grepl("run", colnames(pls_elevsq_prdct_cv_df)))#, 
                                                     #which(colnames(pls_elevsq_prdct_cv_df) %in% pls_elevsq_rlvnt_Unq)
 )]
 saveRDS(object = pls_elevsq_prdct_cv_df, file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
+
 
 
 obs_smmry_loop <- lapply(seq(nrow(resp_loop_bind)), function(k){
@@ -264,7 +217,8 @@ obs_smmry_loop <- lapply(seq(nrow(resp_loop_bind)), function(k){
   })})
 obs_smmry <- do.call(rbind,obs_smmry_loop)
 obs_smmry <- do.call(rbind, obs_smmry)
-obs_smmry <- obs_smmry[c(1:length(resp_loop)),]
+obs_smmry <- obs_smmry[c(1:length(resp_loop_bind)),]
+saveRDS(object = obs_smmry, file = paste0(outpath, "obs_smmry.rds"))
 ########replace##############################################################################################################jac with _jac_...
 # for (i in models){
 #pdf(file = paste0(outpath, "plot_ffs.pdf")) ###only uncomment with plot argument and dev.off argument
@@ -284,9 +238,12 @@ prediction_rep <- lapply(models, function(i){
   resp <- gsub("kipps", "kipps_", resp)
   resp <- gsub("tarsus", "_tarsus_", resp)
   resp <- gsub("wing", "_wing_", resp)
-  resp <- gsub("sum", "sum_", resp)
+  resp <- gsub("^sum", "sum_", resp)
+  resp <- gsub("residsum", "residsum_", resp)
   resp <- gsub("N(\\d+)", "_N\\1", resp)
   
+  
+  ####arten von denen es gar keinen run gibt tauchen hier nicht auf!!!
   err_hnd_files <- c()
     err_hnd <- models[grepl(paste0("_", resp_as_nm), models)]
     if(length(err_hnd) != length(outs_lst)){
@@ -294,7 +251,7 @@ prediction_rep <- lapply(models, function(i){
       for (j in names(outs_lst)){
         file_ok <- err_hnd[grepl(j, err_hnd)]
         if (length(file_ok) == 0){
-          file_miss <- c(file_miss, paste0(i, "_", j))
+          file_miss <- c(file_miss, list(paste0(i, "_", j)), resp, j)
         }
       }
       err_hnd_files <- c(err_hnd_files, file_miss)
@@ -329,11 +286,15 @@ prediction_rep <- lapply(models, function(i){
   ###colnames(new_df)[] <- resp#########################################sollte auf dauer geändert werden???wofür ist das überhaupt? Nur für einige nätig? bei SRmammals ist es das eh schon
   ##predict with pls normal model!
   prediction <- predict(mod, newdata = tbl_out)
-  prdct <- data.frame(plotID = out_plt, 
-                      plotUnq = outs_lst[[run_indx]]$plotUnq, 
+  # prdct <- data.frame(plotID = out_plt, 
+  #                     plotUnq = outs_lst[[run_indx]]$plotUnq, 
+  #                     run = run, 
+  #                     resp = prediction)
+  prdct <- data.frame(plotID = tbl_out$plotID, 
+                      plotUnq = tbl_out$plotUnq, 
                       run = run, 
                       resp = prediction)
-  stats <- postResample(prediction, tbl_out[[resp]])
+  # stats <- postResample(prediction, tbl_out[[resp]])
   
   # ###prediction of Sr and resid data on all plots
   # new_df_all <- df_scl
@@ -347,7 +308,7 @@ prediction_rep <- lapply(models, function(i){
 
   return(list(name = resp, 
               nameUnq = paste0(resp, "_", run), 
-              stats_pls_cv = stats, 
+              # stats_pls_cv = stats, 
               varimp = varimp, 
               selvars = selvars, 
               nmbr_selvars = nmbr_selvars, 
@@ -363,40 +324,57 @@ prediction_rep <- lapply(models, function(i){
               ))
 
 })
-stats_lst <- do.call(rbind, prediction_rep)
+mod_res_lst <- do.call(rbind, prediction_rep)
 
+saveRDS(mod_res_lst, file = paste0(outpath, "mod_res_lst.rds"))
+# mod_res_lst <- readRDS(paste0(outpath, "mod_res_lst.rds"))
 ###########################################
 #####variable importance df per response
 ###########################################
-stats <- data.frame()
+# stats <- data.frame()
 varimp_lst <- list()
 nmbrs_selvars_lst <- list()
 err_hand_lst <- list()
-for (x in (seq(nrow(stats_lst)))){
-  resp <- stats_lst[x,]$name
-  respUnq <- stats_lst[x,]$nameUnq
-  nmbrs <- data.frame(t(stats_lst[x,]$stats))
-  varimp <- stats_lst[x,]$varimp
-  err_hand <- stats_lst[x,]$err_hnd_files
-  tmp_stats <- data.frame(resp = resp, 
-                          respUnq = respUnq, 
-                          RMSE = nmbrs$RMSE, 
-                          Rsquared = nmbrs$Rsquared, 
-                          MAE = nmbrs$MAE)
+selvars_lst <- list()
+for (x in (seq(nrow(mod_res_lst)))){
+  resp <- mod_res_lst[x,]$name
+  respUnq <- mod_res_lst[x,]$nameUnq
+  # nmbrs <- data.frame(t(mod_res_lst[x,]$stats))
+  varimp <- mod_res_lst[x,]$varimp
+  err_hand <- mod_res_lst[x,]$err_hnd_files
+  # tmp_stats <- data.frame(resp = resp, 
+                          # respUnq = respUnq, 
+                          # RMSE = nmbrs$RMSE, 
+                          # Rsquared = nmbrs$Rsquared, 
+                          # MAE = nmbrs$MAE)
   #summarys
-  stats <- rbind(stats, tmp_stats)
+  # stats <- rbind(stats, tmp_stats)
 
   varimp_lst[[resp]] <- varimp
-  nmbrs_selvars_lst[[resp]] <- stats_lst[x,]$nmbr_selvars
+  nmbrs_selvars_lst[[resp]] <- mod_res_lst[x,]$nmbr_selvars
+  selvars_lst[[resp]] <- mod_res_lst[x,]$selvars
   err_hand_lst[[resp]] <- err_hand
+  
 }
 
 nmbrs_selvar <- as.data.frame(do.call(rbind,nmbrs_selvars_lst))
+
+selvars_cmbn <- data.frame()
+for (i in seq(length(selvars_lst))){
+  df <- data.frame(resp = names(selvars_lst[i]), pred = selvars_lst[[i]])
+  selvars_cmbn <- rbind(selvars_cmbn, df)
+}
+selvars_crsstbl <- as.data.frame.matrix(table(selvars_cmbn))
+
+
 
 saveRDS(varimp_lst, file = paste0(outpath, "varimp_lst.rds"))
 #varimp_lst <- readRDS(file = paste0(inpath, "varimp_lst.rds"))
 
 saveRDS(nmbrs_selvar, file = paste0(outpath, "nmbrs_selvar.rds"))
+
+saveRDS(selvars_crsstbl, file = paste0(outpath, "selvars_crsstbl.rds"))
+selvars_crsstbl <- readRDS(file = paste0(outpath, "selvars_crsstbl.rds"))
 
 ###summarise error handling files
 saveRDS(err_hand_lst, file = paste0(inpath, "err_handling_files.rds"))
@@ -404,54 +382,54 @@ saveRDS(err_hand_lst, file = paste0(inpath, "err_handling_files.rds"))
 #########################################
 #####other statistical values (not from within postResample) # sollte vll verallgemeinert werden f�r alle statistischen dataframes
 ########################################
-stats_smry <- as.data.frame(ddply(stats,~resp,summarise,
-                             meanR2 = mean(Rsquared, na.rm = T),
-                             medianR2 = median(Rsquared, na.rm = T),
-                             sdR2 = sd(Rsquared, na.rm = T), 
-                             meanRMSE = mean(RMSE, na.rm = T),
-                             medianRMSE = median(RMSE, na.rm = T),
-                             sdRMSE = sd(RMSE, na.rm = T)))
-
-stats <- merge(stats, stats_smry)
-
-###merge stats with N plots and mean N of species per plot number
-stats <- merge(stats, obs_smmry, by.x = "resp", by.y = 0)
-
-stats$RMSE_norm_by_sd <- NA
-for (k in unique(stats$resp)){
-  tmp <- stats[which(stats$resp == k),]
-  tmp_sd <- sd(mrg_tbl[,which(colnames(mrg_tbl) == k)], na.rm = T)
-  stats$RMSE_norm_by_sd[which(stats$resp == k)] <- stats$RMSE[which(stats$resp == k)]/tmp_sd
-}
-
-stats$RMSE_norm_by_mean <- NA
-for (j in unique(stats$resp)){
-  tmp <- stats[which(stats$resp == j),]
-  tmp_mean <- mean(mrg_tbl[,which(colnames(mrg_tbl) == j)], na.rm = T)
-  stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
-}
-
-save(stats, file = paste0(inpath, "stats.RData"))
-#stats <- get(load(paste0(inpath, "stats.RData")))
+# stats_smry <- as.data.frame(ddply(stats,~resp,summarise,
+#                              meanR2 = mean(Rsquared, na.rm = T),
+#                              medianR2 = median(Rsquared, na.rm = T),
+#                              sdR2 = sd(Rsquared, na.rm = T), 
+#                              meanRMSE = mean(RMSE, na.rm = T),
+#                              medianRMSE = median(RMSE, na.rm = T),
+#                              sdRMSE = sd(RMSE, na.rm = T)))
+# 
+# stats <- merge(stats, mod_res_smry)
+# 
+# ###merge stats with N plots and mean N of species per plot number
+# stats <- merge(stats, obs_smmry, by.x = "resp", by.y = 0)
+# 
+# stats$RMSE_norm_by_sd <- NA
+# for (k in unique(stats$resp)){
+#   tmp <- stats[which(stats$resp == k),]
+#   tmp_sd <- sd(mrg_tbl[,which(colnames(mrg_tbl) == k)], na.rm = T)
+#   stats$RMSE_norm_by_sd[which(stats$resp == k)] <- stats$RMSE[which(stats$resp == k)]/tmp_sd
+# }
+# 
+# stats$RMSE_norm_by_mean <- NA
+# for (j in unique(stats$resp)){
+#   tmp <- stats[which(stats$resp == j),]
+#   tmp_mean <- mean(mrg_tbl[,which(colnames(mrg_tbl) == j)], na.rm = T)
+#   stats$RMSE_norm_by_mean[which(stats$resp == j)] <- stats$RMSE[which(stats$resp == j)]/tmp_mean
+# }
+# 
+# saveRDS(stats, file = paste0(inpath, "stats.rds"))
+# #stats <- get(load(paste0(inpath, "stats.RData")))
 
 ####prediction df
 prdct_df <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
-for (x in (seq(nrow(stats_lst)))){
-  resp <- paste0(stats_lst[x,]$name, "_", unique(stats_lst[x,]$prdct$run))
-  tmp_prdct <- stats_lst[x,]$prdct
+for (x in (seq(nrow(mod_res_lst)))){
+  resp <- paste0(mod_res_lst[x,]$name, "_", unique(mod_res_lst[x,]$prdct$run))
+  tmp_prdct <- mod_res_lst[x,]$prdct
   colnames(tmp_prdct)[colnames(tmp_prdct) == "resp"] <- resp
   tmp_prdct <- tmp_prdct[,-which(colnames(tmp_prdct) == "run")]
 
-  prdct_df <- merge(prdct_df, tmp_prdct[,c(2:3)], by = "plotUnq", all = T)
+  prdct_df <- merge(prdct_df, tmp_prdct[,c(which(colnames(tmp_prdct) %in% c("plotUnq", resp)))], by = "plotUnq", all = T)
 }
 saveRDS(object = prdct_df, file = paste0(outpath, "prdct_df.rds"))
+prdct_df <- readRDS(file = paste0(outpath, "prdct_df.rds"))
 
-
-# ####prediction df_all
+####prediction df_all
 # prdct_df_all <- data.frame(plotID = mrg_tbl$plotID, plotUnq = mrg_tbl$plotUnq)
-# for (x in (seq(nrow(stats_lst)))){
-#   resp <- paste0(stats_lst[x,]$name, "_", unique(stats_lst[x,]$prdct_all$run))
-#   tmp_prdct_all <- stats_lst[x,]$prdct_all
+# for (x in (seq(nrow(mod_res_lst)))){
+#   resp <- paste0(mod_res_lst[x,]$name, "_", unique(mod_res_lst[x,]$prdct_all$run))
+#   tmp_prdct_all <- mod_res_lst[x,]$prdct_all
 #   colnames(tmp_prdct_all)[colnames(tmp_prdct_all) == "resp"] <- resp
 #   tmp_prdct_all <- tmp_prdct_all[,-which(colnames(tmp_prdct_all) == "run")]
 #   
