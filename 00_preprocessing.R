@@ -21,7 +21,7 @@ library(plyr)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "nov18/"
+sub <- "nov18_test/"
 inpath_general <- "../data/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
@@ -171,7 +171,7 @@ for (i in c(which(colnames(tbl) == "SRmammals") : ncol(tbl))){
     
     tbl_res[!is.na(tbl_res[,i]),i] <- tbl_res[!is.na(tbl_res[,i]),i] - prdct_pls_trn ##was vorher NA war, bleibt auch jetz NA
     colnames(tbl_res)[i] <- paste0("resid", colnames(tbl_res)[i])
-    tbl_pred_res[!is.na(tbl_pred_res[,i]),i] <- prdct_pls_trn ##was vorher NA war, bleibt auch jetz NA
+    tbl_pred_res[!is.na(tbl_pred_res[,i]),i] <- prdct_pls_trn ##was vorher NA war, bleibt auch jetzt NA
   }else{
     tbl_res[!is.na(tbl_res[,i]),i] <- NA ##was vorher NA war, bleibt auch jetz NA
     colnames(tbl_res)[i] <- paste0("resid", colnames(tbl_res)[i])

@@ -7,11 +7,12 @@ library(caret)
 library(ggplot2)
 library(scales)
 library(stringr)
+library(plyr)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-# sub <- "sep18/2018-09-11_ffs_pls_cv_noForest_alpha_all_RMSE/"
-sub <- "nov18/2018-11-16_ffs_plsnofrst_noelevelev2_cvindex/"
+sub <- "nov18/2018-11-22_ffs_plsnofrst_noelevelev2_cvindex/"
+# sub <- "nov18/2018-11-16_ffs_plsnofrst_noelevelev2_cvindex/"
 all_plts <- F
 inpath_general <- "../data/"
 inpath <- paste0("../data/", sub)
@@ -24,7 +25,7 @@ if (file.exists(outpath)==F){
 prdct_df <- readRDS(file = paste0(outpath, "prdct_df.rds"))
 trophic_tbl <- read.csv(paste0(inpath_general, "trophic_tbl.csv"), header = T, sep = ";", dec = ",") 
 pls_elevsq_prdct_cv_df <- readRDS(file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
-mrg_tbl <- readRDS(file = "../data/okt18/dat_ldr_mrg.rds")
+mrg_tbl <- readRDS(file = paste0(inpath_general, "nov18/dat_ldr_mrg.rds"))
 obs_smmry <- readRDS(file = paste0(outpath, "obs_smmry.rds"))
 err_hand_lst <- readRDS(file = paste0(inpath, "err_handling_files.rds"))
 
@@ -45,16 +46,7 @@ resp_vec <- colnames(mrg_tbl)[c(which(colnames(mrg_tbl) == "SRmammals") :
                                   which(colnames(mrg_tbl) == "SRmagnoliids"),
                                 grep("^sum_predator_N", colnames(mrg_tbl)) :
                                   grep("^sum_plant_N", colnames(mrg_tbl)))]
-resp_vec <- resp_vec[-which(grepl("sum_predator_N5", resp_vec))]
-#####
-#####
-#####
-#####
-####ACHTUNG: residsum_predator nur vorübergehend rausgenommen!!!
-#####
-#####
-#####
-#####
+
 
 
 stats_all_lst <- lapply(resp_vec, function(resp){
@@ -123,7 +115,7 @@ stats_all_lst <- lapply(resp_vec, function(resp){
     #1 - (sum((obs_SRresp[,resp]-pls_SRresp[,i])^2, na.rm = "complete.obs")/((sum(complete.cases((pls_SRresp[,i])))-1)*var(obs_SRresp[,resp], na.rm = "complete.obs")))
     RMSE <- caret::RMSE(pls_SRresp[,i], obs_SRresp[,resp], na.rm = T)
     RMSE_sd <- RMSE / sd_resp_SR
-    return(list(RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
+    return(list(resp_run = i, RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
   })
   stats_pls <- data.frame(do.call("rbind", stats_pls))
   stats_pls$type <- "SR"
@@ -135,12 +127,12 @@ stats_all_lst <- lapply(resp_vec, function(resp){
     err_run <- err_hand_lst[paste0("resid", resp)][[1]][[3]]
     runs <- runs[!grepl(err_run, runs)]
   }}
-  stats_elevsq_resid_sum <- lapply(runs, function(i){
-    print(i)
-    R2 <- caret::R2(sum_elevsq_resid[,i], obs_SRresp[,resp], na.rm = T)
-    RMSE <- caret::RMSE(sum_elevsq_resid[,i], obs_SRresp[,resp], na.rm = T)
+  stats_elevsq_resid_sum <- lapply(runs, function(m){
+    print(m)
+    R2 <- caret::R2(sum_elevsq_resid[,m], obs_SRresp[,resp], na.rm = T)
+    RMSE <- caret::RMSE(sum_elevsq_resid[,m], obs_SRresp[,resp], na.rm = T)
     RMSE_sd <- RMSE / sd_resp_SR
-    return(list(RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
+    return(list(resp_run = m, RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
   })
   stats_elevsq_resid_sum <- data.frame(do.call("rbind", stats_elevsq_resid_sum))
   stats_elevsq_resid_sum$type <- "sum_elevsq_resid"
@@ -160,7 +152,7 @@ stats_all_lst <- lapply(resp_vec, function(resp){
     R2 <- caret::R2(pls_residresp[,j], obs_residresp[,paste0("resid", resp)], na.rm = T)
     RMSE <- caret::RMSE(pls_residresp[,j], obs_residresp[,paste0("resid", resp)], na.rm = T)
     RMSE_sd <- RMSE / sd_resp_SR
-    return(list(RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
+    return(list(resp_run = j, RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
   })
   stats_res <- data.frame(do.call("rbind", stats_res))
 
@@ -178,7 +170,7 @@ stats_all_lst <- lapply(resp_vec, function(resp){
                         obs_SRresp[which(obs_SRresp$plotID %in% pls_elevsq_cv_SRresp$plotID),
                                    grepl(substr(k,5, (nchar(k)-6)), colnames(obs_SRresp))], na.rm = T)
     RMSE_sd <- RMSE / sd_resp_SR
-    return(list(RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
+    return(list(resp_run = k, RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
   })
   stats_pls_elevsq_cv <- data.frame(do.call("rbind", stats_pls_elevsq_cv))
   stats_pls_elevsq_cv$type <- "SR_onlyelevsq"
@@ -195,6 +187,9 @@ stats_all_lst <- lapply(resp_vec, function(resp){
 })
   
 stats_all <- do.call("rbind", stats_all_lst)
+stats_all$resp_run <- gsub("_([0-9]+)", "\\1",  stats_all$resp_run)
+stats_all$run <- as.numeric(gsub(".*?([0-9]+).*", "\\1",  stats_all$resp_run))
+
 
 for (x in seq(nrow(stats_all))){
   trop <- NA
@@ -252,6 +247,7 @@ mean_df <- merge(mean_df, mean_df_RMSE_sd, by = c("resp", "type"))
 stats_all <- merge(stats_all, mean_df, by = c("resp", "type"))
 
 saveRDS(stats_all, file = paste0(outpath, "stats_all.rds"))
+write.csv(stats_all, file = paste0(outpath, "stats_all.csv"))
 
 myColors <- c("mediumslateblue", "blue2", "aquamarine3", "chocolate1", 
               "firebrick1", "darkmagenta")
@@ -291,9 +287,20 @@ print(ggplot(data = stats_all, aes(x=resp, y=RMSE_sd)) +
         fillscl + 
         ggtitle(paste0(title, "_", sub)))
 dev.off()
-  
-      
 
+###plot only summaries
+stats_sum <- stats_all[grepl("sum", stats_all$troph_sep),]
+
+pdf(file = paste0(outpath, "stats_sum.pdf"), height= 10, width = 20)#, paper = "a4r")
+print(ggplot(data = stats_sum, aes(x=resp, y=RMSE_sd)) + 
+        #geom_rect(fill=grey_pal()(length(levels(stats_all$troph_sep))+5)[as.numeric(stats_all$troph_sep)+5], 
+        #xmin = -Inf,xmax = Inf, ymin = -Inf,ymax = Inf) +
+        geom_boxplot(aes(fill=type), width = 1) + 
+        facet_grid(~troph_sep, scales = "free_x", space="free_x", switch = "x") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) + 
+        fillscl + 
+        ggtitle(paste0(title, "_", sub)))
+dev.off()
 
 #   #pdf(file = paste0(path_nofrst, "stats_", resp, ".pdf"))
 #   ##plot RMSE

@@ -31,9 +31,10 @@ outpath <- paste0("../data/", sub)
 
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "frst_noelevelev2_cvindex"
-all_plts <- F
-frst <- T # set true if model should only be done for forested plots
+comm <- "allplts_noelevelev2_cvindex"
+# comm <- "nofrst_noelevelev2_cvindex"
+all_plts <- T
+frst <- F # set true if model should only be done for forested plots
 cl <- 19
 ###
 #DATAFRAME manipulation

@@ -23,8 +23,8 @@ library(reshape2)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "nov18/2018-11-16_ffs_plsnofrst_elevelev2_cvindex/"
-# sub <- "okt18/2018-10-28_ffs_plsnofrst_incl_elevelev2lui_cvindex/"
+sub <- "nov18/2018-11-22_ffs_plsnofrst_noelevelev2_cvindex/"
+# sub <- "nov18/2018-11-21_ffs_plsfrst_noelevelev2_cvindex/"
 
 all_plts <- F#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
@@ -138,10 +138,8 @@ resp_loop <- lapply(nm_resp, function(x){
       tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
       tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
       
-      
       cvIndex <- cv_in_out_lst[[k]]$cvIndex
       cvIndex_out <- cv_in_out_lst[[k]]$cvIndex_out
-      
       
        mod_pls_elev_cv <- tryCatch(
       train(tbl_in[,c("elevation","elevsq")], tbl_in[,x], 
