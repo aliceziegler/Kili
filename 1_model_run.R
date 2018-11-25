@@ -123,7 +123,7 @@ for (i in nm_pred_all){
 ###
 #CONTROL parameters
 ###
-runs <- seq(length(outs_lst))
+runs <- seq(outs_lst)
 type <- "ffs"
 method <- "pls" # or other caret methods
 
@@ -175,7 +175,7 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
   #x <- 5
   for (x in seq(runs)){
     # print(j)
-    out_plt <- outs_lst[[x]]$plotID
+    out_plt <- outs_lst[[x]]
     tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
     tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
     
@@ -209,9 +209,9 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
       out <- rbind(out_sel, out_miss)
     })
     cvIndex <- lapply(cvouts_lst, function(i){
-      res <- which(!(tbl_in$plotID %in% i$plotID))
+      res <- which(!(tbl_in$plotID %in% i$plotID)) ####$plotID löschen nach neuer formatierung
     })
-    cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
+    cvIndex_out <- lapply(cvouts_lst, function(i){
       res <- which((tbl_in$plotID %in% i$plotID))
     })
 
