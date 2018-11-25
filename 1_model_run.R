@@ -21,7 +21,7 @@ library(plyr)
 #setwd for folder with THIS script (only possible within Rstudio)
 # setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
 setwd("/mnt/sd19006/data/users/aziegler/src")
-sub <- "nov18/"
+sub <- "nov18_test/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../data/", sub)
 
@@ -31,42 +31,46 @@ outpath <- paste0("../data/", sub)
 
 ###DOCUMENTATION options
 #comment for explenatory filename
-comm <- "allplts_noelevelev2_cvindex"
+set <- "nofrst"
+# set <- "frst"
+# set <- "allplts"
+comm <- paste0(set, "_noelevelev2_cvindex")
 # comm <- "nofrst_noelevelev2_cvindex"
-all_plts <- T
-frst <- F # set true if model should only be done for forested plots
+# all_plts <- F
+# frst <- F # set true if model should only be done for forested plots
 cl <- 19
 ###
 #DATAFRAME manipulation
 ###
 ###choose dataframe and load dataframe
-tbl_nm <- "dat_ldr_mrg.rds"
+tbl_nm <- paste0("tbl_mrg_", set, ".rds")
 
 ##read datasets
 outs_lst <- readRDS(paste0(inpath, "outs_lst.rds"))
-dat_ldr_mrg <- readRDS(paste0(inpath, tbl_nm))
+cvouts_lst <- readRDS(paste0(inpath, "cvouts_lst.rds"))
+tbl <- readRDS(paste0(inpath, tbl_nm))
 
-###crop table to clumns that could at all be relavant
-tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") :
-                        which(colnames(dat_ldr_mrg) == "lat"),
-                      which(colnames(dat_ldr_mrg) == "plotUnq"),
-                      which(colnames(dat_ldr_mrg) == "lui"),
-                      which(colnames(dat_ldr_mrg) == "SRmammals") :
-                        which(grepl("^sum_plant_N", colnames(dat_ldr_mrg))),
-                      which(colnames(dat_ldr_mrg) == "AGB"),
-                      which(colnames(dat_ldr_mrg) == "BE_FHD") :
-                        which(colnames(dat_ldr_mrg) == "BE_PR_55"),
-                      which(colnames(dat_ldr_mrg) == "BE_PR_REG") :
-                        which(colnames(dat_ldr_mrg) == "LAI"),
-                      which(colnames(dat_ldr_mrg) == "chm_surface_ratio"),
-                      which(colnames(dat_ldr_mrg) == "pulse_returns_max") :
-                        which(colnames(dat_ldr_mrg) == "pulse_returns_mean"),
-                      which(colnames(dat_ldr_mrg) == "pulse_returns_sd"),
-                      which(colnames(dat_ldr_mrg) == "vegetation_coverage_01m") :
-                        which(colnames(dat_ldr_mrg) == "vegetation_coverage_10m"),
-                      which(colnames(dat_ldr_mrg) == "mdn_rtrn"),
-                      which(colnames(dat_ldr_mrg) == "sd_rtrn_1"),
-                      which(colnames(dat_ldr_mrg) == "gap_frac"))]
+# ###crop table to clumns that could at all be relavant
+# tbl <- dat_ldr_mrg[,c(which(colnames(dat_ldr_mrg) == "plotID") :
+#                         which(colnames(dat_ldr_mrg) == "lat"),
+#                       which(colnames(dat_ldr_mrg) == "plotUnq"),
+#                       which(colnames(dat_ldr_mrg) == "lui"),
+#                       which(colnames(dat_ldr_mrg) == "SRmammals") :
+#                         which(grepl("^sum_plant_N", colnames(dat_ldr_mrg))),
+#                       which(colnames(dat_ldr_mrg) == "AGB"),
+#                       which(colnames(dat_ldr_mrg) == "BE_FHD") :
+#                         which(colnames(dat_ldr_mrg) == "BE_PR_55"),
+#                       which(colnames(dat_ldr_mrg) == "BE_PR_REG") :
+#                         which(colnames(dat_ldr_mrg) == "LAI"),
+#                       which(colnames(dat_ldr_mrg) == "chm_surface_ratio"),
+#                       which(colnames(dat_ldr_mrg) == "pulse_returns_max") :
+#                         which(colnames(dat_ldr_mrg) == "pulse_returns_mean"),
+#                       which(colnames(dat_ldr_mrg) == "pulse_returns_sd"),
+#                       which(colnames(dat_ldr_mrg) == "vegetation_coverage_01m") :
+#                         which(colnames(dat_ldr_mrg) == "vegetation_coverage_10m"),
+#                       which(colnames(dat_ldr_mrg) == "mdn_rtrn"),
+#                       which(colnames(dat_ldr_mrg) == "sd_rtrn_1"),
+#                       which(colnames(dat_ldr_mrg) == "gap_frac"))]
 
 ##add some columns that are needed later
 cats <- unique(tbl$cat)
@@ -77,15 +81,12 @@ cats <- unique(tbl$cat)
 ### plots scalen. Und nicht ?ber alle!
 ###Au?erdem ist das rausschmei?en wenn 50% der Daten gleich sind auch nur auf dem tats?chlich
 ### ins Modell eingehenden Datensatz sinnvoll
-
-if (all_plts == F){
-  if (frst == T){
-    cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo", "hom")
-  }else if (frst == F){
-    cat <- c("cof", "gra", "hel", "mai", "sav")
-  }
-  tbl <- tbl[which(tbl$cat %in% cat),]
-}
+# if (o != "allplts"){
+#   if (o == "frst"){
+#     cat <- c("fer", "flm", "foc", "fod", "fpd", "fpo", "hom")
+#   }else if (o == "nofrst"){
+#     cat <- c("cof", "gra", "hel", "mai", "sav")
+#   }}
 
 ###choose predictors, responses and meta data
 nm_meta <- c("plotID", "selID", "cat", "plotUnq")
@@ -93,10 +94,10 @@ nm_meta <- c("plotID", "selID", "cat", "plotUnq")
 #^ and $ means only to look for this expression and not for resid_SRmammals
 nm_resp <- colnames(tbl)[c(seq(grep("^SRmammals$", names(tbl)), grep("^SRsnails$", names(tbl))),
                            seq(grep("^SRrosids$", names(tbl)), grep("^SRmagnoliids$", names(tbl))),
+                           seq(grep("^sum_predator_N", names(tbl)), grep("^sum_plant_N", names(tbl))), 
                            seq(grep("residSRmammals", names(tbl)), grep("residSRsnails", names(tbl))),
                            seq(grep("residSRrosids", names(tbl)), grep("residSRmagnoliids", names(tbl))),
-                           seq(grep("residsum_predator_N", names(tbl)), grep("residsum_plant_N", names(tbl))), 
-                           seq(grep("^sum_predator_N", names(tbl)), grep("^sum_plant_N", names(tbl))))]
+                           seq(grep("residsum_predator_N", names(tbl)), grep("residsum_plant_N", names(tbl))))]
 # nm_resp <- "SRmammals"
 nm_pred_all <- colnames(tbl)[c(which(colnames(tbl) %in% "AGB"),
                                which(colnames(tbl) %in% "BE_FHD") : which(colnames(tbl) %in% "BE_PR_55"),
@@ -196,26 +197,31 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
     
 
     ###cv index gleiches system wie outer loop
-    cvind_num <- unique(sort(tbl_in$selID))
-    cvind_num <- cvind_num[which(cvind_num >0)]
-    cvouts_lst <- lapply(cvind_num, function(k){
-      out_sel <- tbl_in[which(tbl_in$selID == k),]
-      miss <- cats[!(cats %in% out_sel$cat)]
-      df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
-      set.seed(k)
-      out_miss <- ddply(df_miss, .(cat), function(x){
-        x[sample(nrow(x), 1), ]
-      })
-      out <- rbind(out_sel, out_miss)
-    })
-    cvIndex <- lapply(cvouts_lst, function(i){
-      res <- which(!(tbl_in$plotID %in% i$plotID)) ####$plotID löschen nach neuer formatierung
-    })
-    cvIndex_out <- lapply(cvouts_lst, function(i){
-      res <- which((tbl_in$plotID %in% i$plotID))
-    })
+    # cvind_num <- unique(sort(tbl_in$selID))
+    # cvind_num <- cvind_num[which(cvind_num >0)]
+    # cvouts_lst <- lapply(cvind_num, function(k){
+    #   out_sel <- tbl_in[which(tbl_in$selID == k),]
+    #   miss <- cats[!(cats %in% out_sel$cat)]
+    #   df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
+    #   set.seed(k)
+    #   out_miss <- ddply(df_miss, .(cat), function(x){
+    #     x[sample(nrow(x), 1), ]
+    #   })
+    #   out <- rbind(out_sel, out_miss)
+    # })
+    # cvIndex <- lapply(cvouts_lst, function(i){
+    #   res <- which(!(tbl_in$plotID %in% i$plotID)) ####$plotID löschen nach neuer formatierung
+    # })
+    # cvIndex_out <- lapply(cvouts_lst, function(i){
+    #   res <- which((tbl_in$plotID %in% i$plotID))
+    # })
 
-    
+    cvIndex <- lapply(cvouts_lst[[x]], function(k){
+      res <- which(!(tbl_in$plotID %in% k))
+    })
+    cvIndex_out <- lapply(cvouts_lst[[x]], function(k){
+      res <- which((tbl_in$plotID %in% k))
+    })
     
     # if (type == "rfe"){
     #   mod <- rfe(pred, resp, method = method,
@@ -248,8 +254,6 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
   }
   
 }
-
-
 
 save(nm_pred, file = paste0(modDir, "/nm_pred.RData"))
 save(nm_resp, file = paste0(modDir, "/nm_resp.RData"))
