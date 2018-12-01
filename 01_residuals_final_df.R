@@ -20,7 +20,8 @@ outpath <- paste0("../data/", sub)
 ########################################################################################
 ###Settings
 ########################################################################################
-set <- c("frst", "nofrst", "allplts")
+# set <- c("frst", "nofrst", "allplts")
+set <- c("nofrst")
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
 ##########################################################################################################################################################
@@ -33,16 +34,26 @@ ind_nums <- sort(unique(dat_ldr_mrg$selID))
 runs <- ind_nums[ind_nums>0]
 cats <- unique(dat_ldr_mrg$cat)
 
+rndm_draw <- c()
 outs_lst_rw <- lapply(runs, function(k){
   out_sel <- dat_ldr_mrg[which(dat_ldr_mrg$selID == k),]
   miss <- cats[!(cats %in% out_sel$cat)]
   df_miss <- dat_ldr_mrg[dat_ldr_mrg$cat %in% as.vector(miss),]
+  print(rndm_draw)
+  if (length(rndm_draw) > 0){
+    df_miss <- df_miss[-which(df_miss$plotID %in% rndm_draw),]
+  }
   set.seed(k)
   out_miss <- ddply(df_miss, .(cat), function(x){
     x[sample(nrow(x), 1), ]
   })
+  rndm_draw <<- c(rndm_draw, as.character(out_miss$plotID)) #<<- leider nötig, weil sonst rndm_draw außerhalb nciht verändert wird
+  print(k)
+  print(rndm_draw)
   out <- rbind(out_sel, out_miss)
-})
+  # outs_lst_rw <- append(outs_lst_rw, out) 
+  })
+
 
 outs_lst <- outs_lst_rw
 for (j in runs){
@@ -133,6 +144,7 @@ for (o in set){
                                   prdct_pls_trn <- predict(object = mod_pls_trn, newdata = new_dat)
                                   tbl_pred_elev <- data.frame(plotID = tbl_out[(tbl_out$selID == x|tbl_out$selID == 0),"plotID"], 
                                                               plotUnq = tbl_out[(tbl_out$selID == x|tbl_out$selID == 0), "plotUnq"], 
+                                                              runs = x, 
                                                               selID = tbl_out[(tbl_out$selID == x|tbl_out$selID == 0), "selID"], 
                                                               prdct_elev = prdct_pls_trn)
                                   colnames(tbl_pred_elev)[which(colnames(tbl_pred_elev) == "prdct_elev")] <- colnames(tbl_in[i])
@@ -140,6 +152,7 @@ for (o in set){
                                 }else{
                                   tbl_pred_elev <- data.frame(plotID = tbl_out$plotID, 
                                                               plotUnq = tbl_out$plotUnq, 
+                                                              runs = x, 
                                                               selID = tbl_out$selID, 
                                                               prdct_elev = NA)
                                   colnames(tbl_pred_elev)[which(colnames(tbl_pred_elev) == "prdct_elev")] <- colnames(tbl_in[i])
@@ -151,7 +164,7 @@ for (o in set){
                             }) 
 
     saveRDS(resp_prdct_elev, file = paste0(outpath, "resp_prdct_elev", o, ".rds"))
-    # readRDS(file = paste0(outpath, "resp_prdct_elev", o, ".rds"))
+    # resp_prdct_elev <- readRDS(file = paste0(outpath, "resp_prdct_elev", o, ".rds"))
     
   df_resp_prdct_elev <- do.call("cbind", resp_prdct_elev)
   # df_resp_prdct_elev[17, grepl("plotID", colnames(df_resp_prdct_elev))] ##check for examples if columns hafe the same order

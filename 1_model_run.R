@@ -31,14 +31,13 @@ outpath <- paste0("../data/", sub)
 
 ###DOCUMENTATION options
 #comment for explenatory filename
-set <- "nofrst"
-# set <- "frst"
-# set <- "allplts"
+# set <- "nofrst"
+set <- "frst"
 comm <- paste0(set, "_noelevelev2_cvindex")
 # comm <- "nofrst_noelevelev2_cvindex"
 # all_plts <- F
 # frst <- F # set true if model should only be done for forested plots
-cl <- 19
+cl <- 20
 ###
 #DATAFRAME manipulation
 ###
@@ -233,6 +232,9 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
                metric = "RMSE",
                trControl = trainControl(method = "cv", index = cvIndex, indexOut = cvIndex_out),
                verbose = T)
+    
+    
+    
     # mod <- get(load(file = paste0("../data/sep18/2018-09-24_ffs_pls_cv_allplots_",
     #                               "only_moths_RMSE_elev_dstrb_elevsq_plsresid/",
     #                               "indv_model_run5_ffs_pls_SRmoths.RData")))
@@ -253,8 +255,14 @@ model <- foreach(i = nm_resp, .errorhandling = "remove", .packages=c("caret", "C
     
   }
   
-}
+    }
 
 save(nm_pred, file = paste0(modDir, "/nm_pred.RData"))
 save(nm_resp, file = paste0(modDir, "/nm_resp.RData"))
 
+#######################
+###
+#######################
+########################################################################################
+###
+########################################################################################

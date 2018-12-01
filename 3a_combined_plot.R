@@ -11,9 +11,8 @@ library(plyr)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "nov18/2018-11-22_ffs_plsnofrst_noelevelev2_cvindex/"
+sub <- "nov18_test/2018-11-25_ffs_plsnofrst_noelevelev2_cvindex/"
 # sub <- "nov18/2018-11-16_ffs_plsnofrst_noelevelev2_cvindex/"
-all_plts <- F
 inpath_general <- "../data/"
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
@@ -21,23 +20,21 @@ if (file.exists(outpath)==F){
   dir.create(file.path(outpath), recursive = T)
 }
 
+if (grepl("nofrst", sub) == T){
+  set <- "nofrst"
+}else if (grepl("frst", sub) == T & grepl("nofrst", sub) == F){
+  set <- "frst"
+}else if (grepl("allplts", sub)){
+  set <- "allplts"
+}
 ##read data
 prdct_df <- readRDS(file = paste0(outpath, "prdct_df.rds"))
 trophic_tbl <- read.csv(paste0(inpath_general, "trophic_tbl.csv"), header = T, sep = ";", dec = ",") 
-pls_elevsq_prdct_cv_df <- readRDS(file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
-mrg_tbl <- readRDS(file = paste0(inpath_general, "nov18/dat_ldr_mrg.rds"))
+# pls_elevsq_prdct_cv_df <- readRDS(file = paste0(outpath, "pls_elevsq_prdct_cv_df.rds"))
+mrg_tbl <- readRDS(paste0(inpath, "../tbl_mrg_", set, ".rds"))
 obs_smmry <- readRDS(file = paste0(outpath, "obs_smmry.rds"))
 err_hand_lst <- readRDS(file = paste0(inpath, "err_handling_files.rds"))
-
-
-if (all_plts == F){
-  if(length(grep("nofrst", sub))){
-    frst <- F
-  }else{
-    frst <- T
-  }
-}
-
+prdct_elev <- readRDS(paste0(inpath, "../df_resp_prdct_elev_", set, ".rds"))
 # resp_vec <- colnames(mrg_tbl)[c(which(colnames(mrg_tbl) == "SRmammals") : 
 #                                   which(colnames(mrg_tbl) == "SRmagnoliids"), 
 #                                 which(colnames(mrg_tbl) == "sum_predator_N5") : 
@@ -68,27 +65,70 @@ stats_all_lst <- lapply(resp_vec, function(resp){
   pls_residresp <- prdct_df[,c(which(colnames(prdct_df) %in% c("plotID", "plotUnq")), 
                                 which(grepl(paste0("resid", resp), colnames(prdct_df))))]
   
-  ##pls_elevsq cv
-  pls_elevsq_cv_SRresp <- pls_elevsq_prdct_cv_df[, c(which(colnames(pls_elevsq_prdct_cv_df) %in% c("plotID", "plotUnq")), 
-                                                     which(grepl(resp, colnames(pls_elevsq_prdct_cv_df))))]
   
-  ##sum plselevsq_resid
-  pls_elevsq_cv_SRresp_mrgbl <- pls_elevsq_cv_SRresp
-  colnames(pls_elevsq_cv_SRresp_mrgbl)[3:ncol(pls_elevsq_cv_SRresp_mrgbl)] <- str_sub(colnames(pls_elevsq_cv_SRresp_mrgbl)[3:ncol(pls_elevsq_cv_SRresp_mrgbl)],-5, -1)
-  colnames(pls_elevsq_cv_SRresp_mrgbl) <- gsub("[^[:alnum:]]","",colnames(pls_elevsq_cv_SRresp_mrgbl))
-  rownames(pls_elevsq_cv_SRresp_mrgbl) <- pls_elevsq_cv_SRresp_mrgbl$plotUnq
-  pls_elevsq_cv_SRresp_mrgbl <- pls_elevsq_cv_SRresp_mrgbl[,!names(pls_elevsq_cv_SRresp_mrgbl) %in% c("plotID", "plotUnq")]
-  pls_residresp_mrgbl <- pls_residresp
-  colnames(pls_residresp_mrgbl)[3:ncol(pls_residresp_mrgbl)] <- str_sub(colnames(pls_residresp_mrgbl)[3:ncol(pls_residresp_mrgbl)], -4, -1)
-  rownames(pls_residresp_mrgbl) <- pls_residresp_mrgbl$plotUnq
-  pls_residresp_mrgbl <- pls_residresp_mrgbl[,!names(pls_residresp_mrgbl) %in% c("plotID", "plotUnq")]
-  #combine dfs
-  comb_dfs <- cbind(names=c(rownames(pls_elevsq_cv_SRresp_mrgbl), rownames(pls_residresp_mrgbl)), 
-        rbind.fill(list(pls_elevsq_cv_SRresp_mrgbl, pls_residresp_mrgbl)))
-  sum_elevsq_resid <- ddply(comb_dfs, .(names), function(x) colSums(x[,-1], na.rm = F))
-  colnames(sum_elevsq_resid)[2:ncol(sum_elevsq_resid)] <- paste0(resp, "_", colnames(sum_elevsq_resid)[2:ncol(sum_elevsq_resid)])
-  colnames(sum_elevsq_resid)[1] <- "plotUnq"
+  #prdct_elevsq aus resid berechnung cv
+  prdct_elev_resp <- prdct_elev[,c(which(colnames(prdct_elev) %in% c("plotID", "plotUnq", "runs")),
+                                   which(grepl(resp, colnames(prdct_elev))))]
+  ##sum prdct_elevsq + resid aus resid berechnung
+  #sum_elevsq_resid <- pls_residresp
   
+  #####################################################################################
+  # names(pls_residresp) <- paste0("ModellierteResiduen_",names(pls_residresp))
+  # names(prdct_elev_resp)  <- paste0("Hoehenmodell_",names(prdct_elev_resp))
+  # names(obs_SRresp) <- paste0("Observed_",names(obs_SRresp))
+  # dat <- merge(pls_residresp,prdct_elev_resp,by.x="ModellierteResiduen_plotUnq",by.y="Hoehenmodell_plotUnq")
+  # dat <- merge(dat,obs_SRresp,by.x="ModellierteResiduen_plotUnq",by.y="Observed_plotUnq")
+  # dat$finalModel_run1 <- dat$ModellierteResiduen_residSRmammals_run1+dat$Hoehenmodell_SRmammals
+  # dat$finalModel_run2 <- dat$ModellierteResiduen_residSRmammals_run2+dat$Hoehenmodell_SRmammals
+  # dat$finalModel_run3 <- dat$ModellierteResiduen_residSRmammals_run3+dat$Hoehenmodell_SRmammals
+  # dat$finalModel_run4 <- dat$ModellierteResiduen_residSRmammals_run4+dat$Hoehenmodell_SRmammals
+  # dat$finalModel_run5 <- dat$ModellierteResiduen_residSRmammals_run5+dat$Hoehenmodell_SRmammals
+  # 
+  # dat_final <- dat[,names(dat)%in%c("Hoehenmodell_SRmammals",
+  #                                   "Observed_SRmammals",
+  #                                   paste0("finalModel_run",1:5))]
+  # dat_final$final_SRmammals<-rowSums(dat_final[,3:7],na.rm=TRUE)
+  # dat_final$diffHoehe <- abs(dat_final$Hoehenmodell_SRmammals-dat_final$Observed_SRmammals)
+  # dat_final$diffFinal <- abs(dat_final$final_SRmammals-dat_final$Observed_SRmammals)
+  
+  #####################################################################################
+  
+  for (row in pls_residresp$plotUnq){
+    for (col in colnames(pls_residresp)[3:ncol(pls_residresp)]){
+      sum_elevsq_resid[which(sum_elevsq_resid$plotUnq == row), col] <- 
+        pls_residresp[which(pls_residresp$plotUnq == row), col] + 
+        prdct_elev_resp[which(prdct_elev_resp$plotUnq == row), resp]
+    }}
+  colnames(sum_elevsq_resid)[3:ncol(sum_elevsq_resid)] <- substring(colnames(sum_elevsq_resid)[3:ncol(sum_elevsq_resid)], 6, nchar(colnames(sum_elevsq_resid)[3:ncol(sum_elevsq_resid)]))
+
+
+  
+  
+  # ##pls_elevsq cv - alt
+  # pls_elevsq_cv_SRresp <- pls_elevsq_prdct_cv_df[, c(which(colnames(pls_elevsq_prdct_cv_df) %in% c("plotID", "plotUnq")), 
+  #                                                    which(grepl(resp, colnames(pls_elevsq_prdct_cv_df))))]
+  # ##sum elevsqcv und resid
+  # prdct_elev_resp_mrgbl <- pls_elevsq_cv_SRresp
+  # colnames(prdct_elev_resp_mrgbl)[3:ncol(prdct_elev_resp_mrgbl)] <- str_sub(colnames(prdct_elev_resp_mrgbl)[3:ncol(prdct_elev_resp_mrgbl)],-5, -1)
+  # colnames(prdct_elev_resp_mrgbl) <- gsub("[^[:alnum:]]","",colnames(prdct_elev_resp_mrgbl))
+  # rownames(prdct_elev_resp_mrgbl) <- prdct_elev_resp_mrgbl$plotUnq
+  # prdct_elev_resp_mrgbl <- prdct_elev_resp_mrgbl[,!names(prdct_elev_resp_mrgbl) %in% c("plotID", "plotUnq")]
+  # pls_residresp_mrgbl <- pls_residresp
+  # colnames(pls_residresp_mrgbl)[3:ncol(pls_residresp_mrgbl)] <- str_sub(colnames(pls_residresp_mrgbl)[3:ncol(pls_residresp_mrgbl)], -4, -1)
+  # rownames(pls_residresp_mrgbl) <- pls_residresp_mrgbl$plotUnq
+  # pls_residresp_mrgbl <- pls_residresp_mrgbl[,!names(pls_residresp_mrgbl) %in% c("plotID", "plotUnq")]
+  # #combine dfs
+  # comb_dfs <- cbind(names=c(rownames(prdct_elev_resp_mrgbl), rownames(pls_residresp_mrgbl)),
+  #                   rbind.fill(list(prdct_elev_resp_mrgbl, pls_residresp_mrgbl)))
+  # sum_elevsq_resid <- ddply(comb_dfs, .(names), function(x) colSums(x[,-1], na.rm = F))
+  # colnames(sum_elevsq_resid)[2:ncol(sum_elevsq_resid)] <- paste0(resp, "_", colnames(sum_elevsq_resid)[2:ncol(sum_elevsq_resid)])
+  # colnames(sum_elevsq_resid)[1] <- "plotUnq"
+
+
+
+  
+  
+
   ##mean N SR - only calculated from frst/nnon-frst plots
   mn_N_SR <- obs_smmry[which(rownames(obs_smmry) == resp),"meanN_perplot"] 
   
@@ -121,6 +161,8 @@ stats_all_lst <- lapply(resp_vec, function(resp){
   stats_pls$type <- "SR"
 
   ##sum_elevsq_resid ~ obs
+  
+  
   #Abfrage ob alle residuen runs gelaufen sind - funktioniert momentan nur bei einem fehlerhaften modell
   if (length(err_hand_lst) > 0){
   if (grepl(paste0("resid", resp), names(err_hand_lst))){
@@ -162,16 +204,18 @@ stats_all_lst <- lapply(resp_vec, function(resp){
   runs_pls_elevsq_cv <- c(paste0("prd_", resp, "_run_1"), paste0("prd_", resp, "_run_2"), 
                    paste0("prd_", resp, "_run_3"), paste0("prd_", resp, "_run_4"), 
                    paste0("prd_", resp, "_run_5"))
-  stats_pls_elevsq_cv <- lapply(runs_pls_elevsq_cv, function(k){
-    R2 <- caret::R2(pls_elevsq_cv_SRresp[,k], 
-                    obs_SRresp[which(obs_SRresp$plotID %in% pls_elevsq_cv_SRresp$plotID),
-                               grepl(substr(k,5, (nchar(k)-6)), colnames(obs_SRresp))], na.rm = T)
-    RMSE <- caret::RMSE(pls_elevsq_cv_SRresp[,k], 
-                        obs_SRresp[which(obs_SRresp$plotID %in% pls_elevsq_cv_SRresp$plotID),
-                                   grepl(substr(k,5, (nchar(k)-6)), colnames(obs_SRresp))], na.rm = T)
+  stats_pls_elevsq_cv <- lapply(seq(runs_pls_elevsq_cv), function(k){
+    #zeilen, in denen prdct_elev_resp den richtigen run stehen hat. bei obs dann die gleiche plotUnq
+    R2 <- caret::R2(prdct_elev_resp[which(prdct_elev_resp$runs == k),resp], 
+                    obs_SRresp[c(which(obs_SRresp$plotUnq %in% prdct_elev_resp[which(prdct_elev_resp$runs == k), 
+                                                                               "plotUnq"])),resp], na.rm = T)
+    RMSE <- caret::RMSE(prdct_elev_resp[which(prdct_elev_resp$runs == k),resp], 
+                        obs_SRresp[c(which(obs_SRresp$plotUnq %in% prdct_elev_resp[which(prdct_elev_resp$runs == k), 
+                                                                                   "plotUnq"])),resp], na.rm = T)
     RMSE_sd <- RMSE / sd_resp_SR
     return(list(resp_run = k, RMSE_sd = RMSE_sd, RMSE = RMSE, R2 = R2))
   })
+  
   stats_pls_elevsq_cv <- data.frame(do.call("rbind", stats_pls_elevsq_cv))
   stats_pls_elevsq_cv$type <- "SR_onlyelevsq"
  
@@ -181,7 +225,7 @@ stats_all_lst <- lapply(resp_vec, function(resp){
   mrg$RMSE <- as.numeric(mrg$RMSE)
   mrg$R2 <- as.numeric(mrg$R2)
   mrg$resp <- resp
-
+  
   return(mrg)
   }
 })
@@ -252,14 +296,6 @@ write.csv(stats_all, file = paste0(outpath, "stats_all.csv"))
 myColors <- c("mediumslateblue", "blue2", "aquamarine3", "chocolate1", 
               "firebrick1", "darkmagenta")
 fillscl <- scale_fill_manual(name = "col",values = myColors)
-if (all_plts == F){
-  if (frst == T){
-    title <- "forest"
-  }else {
-    title <- "no forest"
-  }
-}else{ 
-  title  <- "all_plots"}
 
 
 # #pdf(file = paste0(outpath, "all_stats.pdf"), height= 10, width = 20)#, paper = "a4r")
@@ -285,7 +321,7 @@ print(ggplot(data = stats_all, aes(x=resp, y=RMSE_sd)) +
         facet_grid(~troph_sep, scales = "free_x", space="free_x", switch = "x") +
         theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) + 
         fillscl + 
-        ggtitle(paste0(title, "_", sub)))
+        ggtitle(paste0(set, "_", sub)))
 dev.off()
 
 ###plot only summaries
@@ -299,7 +335,7 @@ print(ggplot(data = stats_sum, aes(x=resp, y=RMSE_sd)) +
         facet_grid(~troph_sep, scales = "free_x", space="free_x", switch = "x") +
         theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10)) + 
         fillscl + 
-        ggtitle(paste0(title, "_", sub)))
+        ggtitle(paste0(set, "_", sub)))
 dev.off()
 
 #   #pdf(file = paste0(path_nofrst, "stats_", resp, ".pdf"))

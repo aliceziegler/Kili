@@ -23,10 +23,9 @@ library(reshape2)
 
 #Sources: 
 setwd(dirname(rstudioapi::getSourceEditorContext()[[2]]))
-sub <- "nov18/2018-11-22_ffs_plsnofrst_noelevelev2_cvindex/"
+sub <- "nov18_test/2018-11-25_ffs_plsnofrst_noelevelev2_cvindex/"
 # sub <- "nov18/2018-11-21_ffs_plsfrst_noelevelev2_cvindex/"
 
-all_plts <- F#################################################################dauerhaft mit grepl "all" umstellen
 inpath <- paste0("../data/", sub)
 outpath <- paste0("../out/", sub)
 if (file.exists(outpath)==F){
@@ -35,11 +34,19 @@ if (file.exists(outpath)==F){
 ########################################################################################
 ###Settings
 ########################################################################################
+if (grepl("nofrst", sub) == T){
+  set <- "nofrst"
+}else if (grepl("frst", sub) == T & grepl("nofrst", sub) == F){
+  set <- "frst"
+}else if (grepl("allplts", sub)){
+  set <- "allplts"
+}
 nm_pred <- get(load(file = paste0(inpath, "nm_pred.RData")))
 nm_resp <- get(load(file = paste0(inpath, "nm_resp.RData")))
 nm_resp <- gsub("resid_", "resid", nm_resp)
 outs_lst <- readRDS(paste0(inpath, "../outs_lst.rds"))
-mrg_tbl <- readRDS(paste0(inpath, "../dat_ldr_mrg.rds"))
+cvouts_lst <- readRDS(paste0(inpath, "../cvouts_lst.rds"))
+mrg_tbl <- readRDS(paste0(inpath, "../tbl_mrg_", set, ".rds"))
 tbl_scl <- readRDS(file = paste0(inpath, "tbl_scl.rds"))
 ########################################################################################
 ###Do it (Don't change anything past this point except you know what you are doing!)
@@ -47,7 +54,7 @@ tbl_scl <- readRDS(file = paste0(inpath, "tbl_scl.rds"))
 #dfs <- list.files(path = inpath, pattern = glob2rx("df_scl*"), full.names = F)
 models <- list.files(path = inpath, pattern = glob2rx("indv_model*"), full.names = TRUE)
 
-mrg_tbl$selID <- as.numeric(substr(mrg_tbl$plotID, 4, 4))
+# mrg_tbl$selID <- as.numeric(substr(mrg_tbl$plotID, 4, 4))
 
 run_all <- c()
 #run_all
@@ -72,74 +79,79 @@ for (i in seq(length(outs_lst))){
 #   }else if (frst == F){
 #     cat <- c("cof", "gra", "hel", "mai", "sav")
 #   }}
-cats <- unique(tbl_scl$cat)
-tbl <- mrg_tbl[which(mrg_tbl$cat %in% cats),]
+# cats <- unique(tbl_scl$cat)
+# tbl <- mrg_tbl[which(mrg_tbl$cat %in% cats),]
 
-cv_in_out_lst <- lapply(seq(length(outs_lst)), function(x){
-  out_plt <- outs_lst[[x]]$plotID
-  tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
-  tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
-  
-  ###cv index von jeder landuseclass eines, aber zuf?llige Wahl der indices und 20 mal wiederholt
-  # cvouts_lst <- lapply(seq(1:20), function(k){
-  #   set.seed(k)
-  #   out_sel <- ddply(tbl_in, .(cat), function(x){
-  #     x[sample(nrow(x), 1), ]
-  #   })
-  #   out <- rbind(out_sel)
-  # })
-  # cvIndex <- lapply(cvouts_lst, function(i){
-  #   res <- which(!(tbl_in$plotID %in% i$plotID))
-  # })
-  
-  ###cv index gleiches system wie outer loop
-  cvind_num <- unique(sort(tbl_in$selID))
-  cvind_num <- cvind_num[which(cvind_num >0)]
-  cvouts_lst <- lapply(cvind_num, function(k){
-    out_sel <- tbl_in[which(tbl_in$selID == k),]
-    miss <- cats[!(cats %in% out_sel$cat)]
-    df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
-    set.seed(k)
-    out_miss <- ddply(df_miss, .(cat), function(x){
-      x[sample(nrow(x), 1), ]
-    })
-    out <- rbind(out_sel, out_miss)
-  })
-  cvIndex <- lapply(cvouts_lst, function(i){
-    res <- which(!(tbl_in$plotID %in% i$plotID))
-  })
-  cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
-    res <- which((tbl_in$plotID %in% i$plotID))
-  })
-return(list(cvIndex = cvIndex, 
-            cvIndex_out = cvIndex_out))
-})
+# cv_in_out_lst <- lapply(seq(length(outs_lst)), function(x){
+#   out_plt <- outs_lst[[x]]$plotID
+#   tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
+#   tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
+#   
+#   ###cv index von jeder landuseclass eines, aber zuf?llige Wahl der indices und 20 mal wiederholt
+#   # cvouts_lst <- lapply(seq(1:20), function(k){
+#   #   set.seed(k)
+#   #   out_sel <- ddply(tbl_in, .(cat), function(x){
+#   #     x[sample(nrow(x), 1), ]
+#   #   })
+#   #   out <- rbind(out_sel)
+#   # })
+#   # cvIndex <- lapply(cvouts_lst, function(i){
+#   #   res <- which(!(tbl_in$plotID %in% i$plotID))
+#   # })
+#   
+#   ###cv index gleiches system wie outer loop
+#   cvind_num <- unique(sort(tbl_in$selID))
+#   cvind_num <- cvind_num[which(cvind_num >0)]
+#   cvouts_lst <- lapply(cvind_num, function(k){
+#     out_sel <- tbl_in[which(tbl_in$selID == k),]
+#     miss <- cats[!(cats %in% out_sel$cat)]
+#     df_miss <- tbl_in[tbl_in$cat %in% as.vector(miss),]
+#     set.seed(k)
+#     out_miss <- ddply(df_miss, .(cat), function(x){
+#       x[sample(nrow(x), 1), ]
+#     })
+#     out <- rbind(out_sel, out_miss)
+#   })
+#   cvIndex <- lapply(cvouts_lst, function(i){
+#     res <- which(!(tbl_in$plotID %in% i$plotID))
+#   })
+#   cvIndex_out <- lapply(cvouts_lst, function(i){# #######wie übergeben
+#     res <- which((tbl_in$plotID %in% i$plotID))
+#   })
+# return(list(cvIndex = cvIndex, 
+#             cvIndex_out = cvIndex_out))
+# })
 
 
 # ##############Number of plots with this taxa
 #i <- models[grep("_SRheteroptera", models)] #######testing
 resp_loop <- lapply(nm_resp, function(x){
-  
-  # könnte aus Tagelle raus, aber wegen resid und prediktoren und meta 
+  # könnte aus Tabelle raus, aber wegen resid und prediktoren und meta 
   # in tabelle ist es einfacher, die hier mitzumachen
     ###summary observations
-    obs_smmry <- data.frame(Nplots = sum(!is.na(tbl[,x])))
+    obs_smmry <- data.frame(Nplots = sum(!is.na(tbl_scl[,x])))
     row.names(obs_smmry) <- x
-    meanN_perplot <- mean(tbl[,x], na.rm = T)######################brauchen wir tbl
-    sd_per_resp <- sd(tbl[,x], na.rm = T)
+    meanN_perplot <- mean(tbl_scl[,x], na.rm = T)######################brauchen wir tbl_scl
+    sd_per_resp <- sd(tbl_scl[,x], na.rm = T)
     obs_smmry$meanN_perplot <- meanN_perplot
     obs_smmry$sd_per_resp <- sd_per_resp
     
     #####pls cv prediction only elev and elevsq
     pls_elevsq_cv_prdct <- lapply(seq(length(outs_lst)), function(k){
       # print(k)
-      out_plt <- outs_lst[[k]]$plotID
+      out_plt <- outs_lst[[k]]
       
       tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
       tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
       
-      cvIndex <- cv_in_out_lst[[k]]$cvIndex
-      cvIndex_out <- cv_in_out_lst[[k]]$cvIndex_out
+      # cvIndex <- cv_in_out_lst[[k]]$cvIndex
+      # cvIndex_out <- cv_in_out_lst[[k]]$cvIndex_out
+      cvIndex <- lapply(cvouts_lst[[k]], function(m){
+        res <- which(!(tbl_in$plotID %in% m))
+      })
+      cvIndex_out <- lapply(cvouts_lst[[k]], function(m){
+        res <- which((tbl_in$plotID %in% m))
+      })
       
        mod_pls_elev_cv <- tryCatch(
       train(tbl_in[,c("elevation","elevsq")], tbl_in[,x], 
@@ -268,7 +280,7 @@ prediction_rep <- lapply(models, function(i){
   selvars_perf_SE <- mod$selectedvars_perf_SE
   perf_all <- mod$perf_all
   
-  out_plt <- outs_lst[[run_indx]]$plotID 
+  out_plt <- outs_lst[[run_indx]]
   
   tbl_in <- tbl_scl[-which(tbl_scl$plotID %in% out_plt),]
   tbl_out <- tbl_scl[which(tbl_scl$plotID %in% out_plt),]
